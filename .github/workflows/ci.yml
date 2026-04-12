@@ -1,0 +1,67 @@
+name: ci
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+
+jobs:
+  build-test-and-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Build and test
+        run: mvn clean verify
+
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+
+      - name: Build auth image
+        run: docker build -f services/auth-service/Dockerfile -t secure-task-hub-auth:ci .
+
+      - name: Build task image
+        run: docker build -f services/task-service/Dockerfile -t secure-task-hub-task:ci .
+
+      - name: Trivy auth image scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: secure-task-hub-auth:ci
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+
+      - name: Trivy task image scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: secure-task-hub-task:ci
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+
+      - name: Install Grype
+        uses: anchore/scan-action/download-grype@v4
+
+      - name: Grype auth image scan
+        run: grype secure-task-hub-auth:ci --fail-on high
+
+      - name: Grype task image scan
+        run: grype secure-task-hub-task:ci --fail-on high

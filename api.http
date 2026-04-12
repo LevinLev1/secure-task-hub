@@ -1,0 +1,38 @@
+### Health
+GET http://localhost:8081/actuator/health
+###
+GET http://localhost:8082/actuator/health
+
+### Register
+POST http://localhost:8081/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "email": "alice@example.com",
+  "password": "StrongPass123"
+}
+
+### Login — скопируй accessToken из ответа
+POST http://localhost:8081/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "password": "StrongPass123"
+}
+
+### Tasks — подставь токен из login
+POST http://localhost:8082/api/tasks
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhbGljZSIsInJvbGUiOiJST0xFX1VTRVIiLCJpYXQiOjE3NzYwMDczNzIsImV4cCI6MTc3NjAxMDk3Mn0.hYENnN_-Y9w3NtQiz16fYZUrvISVsshdOrgFWXQi4u4
+Content-Type: application/json
+
+{
+  "title": "Test",
+  "description": "From IDEA",
+  "status": "OPEN"
+}
+
+### List tasks
+GET http://localhost:8082/api/tasks
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhbGljZSIsInJvbGUiOiJST0xFX1VTRVIiLCJpYXQiOjE3NzYwMDczNzIsImV4cCI6MTc3NjAxMDk3Mn0.hYENnN_-Y9w3NtQiz16fYZUrvISVsshdOrgFWXQi4u4

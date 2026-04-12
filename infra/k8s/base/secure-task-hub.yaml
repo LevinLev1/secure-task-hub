@@ -1,0 +1,283 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: secure-task-hub
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: secure-task-hub
+data:
+  SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/securetaskhub
+  SPRING_DATASOURCE_USERNAME: securetaskhub
+  AUTH_SERVER_PORT: "8081"
+  TASK_SERVER_PORT: "8082"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secrets
+  namespace: secure-task-hub
+type: Opaque
+stringData:
+  SPRING_DATASOURCE_PASSWORD: change-me-in-real-cluster
+  JWT_SECRET: replace-this-with-a-long-and-random-production-secret
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: secure-task-hub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: securetaskhub
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: SPRING_DATASOURCE_USERNAME
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: SPRING_DATASOURCE_PASSWORD
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U securetaskhub -d securetaskhub"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "300m"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: secure-task-hub
+spec:
+  selector:
+    app: postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: secure-task-hub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      containers:
+        - name: auth-service
+          image: ghcr.io/your-user/secure-task-hub-auth:latest
+          ports:
+            - containerPort: 8081
+          env:
+            - name: SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: AUTH_SERVER_PORT
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: SPRING_DATASOURCE_URL
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: SPRING_DATASOURCE_USERNAME
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: SPRING_DATASOURCE_PASSWORD
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: JWT_SECRET
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8081
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "300m"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: secure-task-hub
+spec:
+  selector:
+    app: auth-service
+  ports:
+    - name: http
+      port: 8081
+      targetPort: 8081
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: task-service
+  namespace: secure-task-hub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: task-service
+  template:
+    metadata:
+      labels:
+        app: task-service
+    spec:
+      containers:
+        - name: task-service
+          image: ghcr.io/your-user/secure-task-hub-task:latest
+          ports:
+            - containerPort: 8082
+          env:
+            - name: SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: TASK_SERVER_PORT
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: SPRING_DATASOURCE_URL
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: SPRING_DATASOURCE_USERNAME
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: SPRING_DATASOURCE_PASSWORD
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: JWT_SECRET
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8082
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8082
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "300m"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: task-service
+  namespace: secure-task-hub
+spec:
+  selector:
+    app: task-service
+  ports:
+    - name: http
+      port: 8082
+      targetPort: 8082
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: app-network-policy
+  namespace: secure-task-hub
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector: {}
+  egress:
+    - to:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 5432
+        - protocol: TCP
+          port: 8081
+        - protocol: TCP
+          port: 8082
+        - protocol: UDP
+          port: 53
