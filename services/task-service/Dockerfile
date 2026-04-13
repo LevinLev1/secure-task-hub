@@ -13,7 +13,7 @@ WORKDIR /app
 
 RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin springuser
 
-COPY --from=build /workspace/services/task-service/target/task-service-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=build /workspace/services/task-service/target/task-service-*.jar app.jar
 
 USER 10001
 

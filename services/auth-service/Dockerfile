@@ -16,7 +16,8 @@ RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin springuser \
   && apt-get install -y --no-install-recommends curl \
   && rm -rf /var/lib/apt/lists/*
 
-COPY --from=build /workspace/services/auth-service/target/auth-service-0.0.1-SNAPSHOT.jar app.jar
+# Single repackaged jar from spring-boot-maven-plugin (version comes from root POM).
+COPY --from=build /workspace/services/auth-service/target/auth-service-*.jar app.jar
 
 USER 10001
 

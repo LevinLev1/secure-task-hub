@@ -12,11 +12,12 @@
 - `Testcontainers`: integration tests with real PostgreSQL (`AuthIntegrationTest`, `TaskIntegrationTest`); `mvn verify` runs them when Docker is available.
 - `Docker` and `docker-compose`: local start of the full stack; `task-service` waits until `auth-service` is healthy so migrations have been applied.
 - `Kubernetes` manifests: deployments, services, config, secrets, probes, resources, network policy.
-- `GitHub Actions`: build, test, filesystem scan, container scan with `Trivy` and `Grype`.
+- `GitHub Actions`: build, test, filesystem scan, container scan with `Trivy` and `Grype`, plus `Semgrep` (Java) and `Checkov` (Kubernetes manifests).
+- **Observability**: JSON logs (`logstash-logback-encoder`), **`X-Correlation-Id`** + MDC, **`audit_log`** table (Flyway `V2`) for register/login and task mutations.
 
 ## Versioning (SemVer)
 
-The project uses **semantic versioning** in `pom.xml` (for example `0.1.0`). Bump **major.minor.patch** when you change behavior in a way people should notice. Git tags like `v0.1.0` can match releases; image tags in Kubernetes are documented in `infra/k8s` when you publish to a registry.
+The root `pom.xml` version follows **SemVer** (currently **0.1.0**). Bump **major.minor.patch** when behaviour worth calling out changes. Pushing a tag **`v0.1.0`** (same scheme) runs **`.github/workflows/release.yml`**: `mvn verify` plus Docker images tagged **`0.1.0`** and **`release`**. See **`docs/versioning.md`** for tags, demo branches, and registry notes.
 
 ## CI vs local Kubernetes (`kind`)
 
@@ -47,6 +48,7 @@ flowchart LR
 - `.github/workflows/ci.yml`
 - `docs/architecture.md`
 - `docs/security-decisions.md`
+- `docs/versioning.md`
 
 ## Security controls showcased
 

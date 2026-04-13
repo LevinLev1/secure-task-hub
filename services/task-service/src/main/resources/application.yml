@@ -32,6 +32,10 @@ management:
       probes:
         enabled: true
 
+app:
+  api-docs:
+    version: 0.1.0
+
 security:
   jwt:
     secret: ${JWT_SECRET:replace-this-with-a-long-development-secret-key-123456}

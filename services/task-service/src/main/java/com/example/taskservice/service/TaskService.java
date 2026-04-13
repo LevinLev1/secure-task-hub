@@ -4,6 +4,7 @@ import com.example.taskservice.dto.TaskRequest;
 import com.example.taskservice.dto.TaskResponse;
 import com.example.taskservice.model.TaskItem;
 import com.example.taskservice.model.TaskStatus;
+import com.example.taskservice.observability.AuditTrailService;
 import com.example.taskservice.repository.TaskRepository;
 import java.time.Instant;
 import java.util.List;
@@ -17,9 +18,11 @@ import org.springframework.web.server.ResponseStatusException;
 public class TaskService {
 
     private final TaskRepository taskRepository;
+    private final AuditTrailService auditTrailService;
 
-    public TaskService(TaskRepository taskRepository) {
+    public TaskService(TaskRepository taskRepository, AuditTrailService auditTrailService) {
         this.taskRepository = taskRepository;
+        this.auditTrailService = auditTrailService;
     }
 
     @Transactional(readOnly = true)
@@ -47,7 +50,14 @@ public class TaskService {
         taskItem.setCreatedAt(Instant.now());
         taskItem.setUpdatedAt(Instant.now());
 
-        return toResponse(taskRepository.save(taskItem));
+        TaskItem saved = taskRepository.save(taskItem);
+        auditTrailService.record(
+                "TASK_CREATED",
+                authentication.getName(),
+                "TASK",
+                String.valueOf(saved.getId()),
+                saved.getTitle());
+        return toResponse(saved);
     }
 
     @Transactional
@@ -58,12 +68,25 @@ public class TaskService {
         taskItem.setStatus(request.status());
         taskItem.setUpdatedAt(Instant.now());
 
-        return toResponse(taskRepository.save(taskItem));
+        TaskItem saved = taskRepository.save(taskItem);
+        auditTrailService.record(
+                "TASK_UPDATED",
+                authentication.getName(),
+                "TASK",
+                String.valueOf(saved.getId()),
+                saved.getTitle());
+        return toResponse(saved);
     }
 
     @Transactional
     public void delete(Long id, Authentication authentication) {
         TaskItem taskItem = loadAuthorizedTask(id, authentication);
+        auditTrailService.record(
+                "TASK_DELETED",
+                authentication.getName(),
+                "TASK",
+                String.valueOf(taskItem.getId()),
+                taskItem.getTitle());
         taskRepository.delete(taskItem);
     }
 

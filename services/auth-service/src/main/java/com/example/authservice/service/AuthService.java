@@ -5,6 +5,7 @@ import com.example.authservice.dto.LoginRequest;
 import com.example.authservice.dto.RegisterRequest;
 import com.example.authservice.model.Role;
 import com.example.authservice.model.UserAccount;
+import com.example.authservice.observability.AuditTrailService;
 import com.example.authservice.repository.UserAccountRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,13 +19,16 @@ public class AuthService {
     private final UserAccountRepository userAccountRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final AuditTrailService auditTrailService;
 
     public AuthService(UserAccountRepository userAccountRepository,
                        PasswordEncoder passwordEncoder,
-                       JwtService jwtService) {
+                       JwtService jwtService,
+                       AuditTrailService auditTrailService) {
         this.userAccountRepository = userAccountRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.auditTrailService = auditTrailService;
     }
 
     @Transactional
@@ -45,6 +49,12 @@ public class AuthService {
 
         UserAccount savedUser = userAccountRepository.save(userAccount);
         String token = jwtService.generateToken(savedUser.getUsername(), savedUser.getRole());
+        auditTrailService.record(
+                "REGISTER_SUCCESS",
+                savedUser.getUsername(),
+                "USER",
+                String.valueOf(savedUser.getId()),
+                null);
 
         return new AuthResponse(token, "Bearer", savedUser.getUsername(), savedUser.getRole().name());
     }
@@ -59,6 +69,12 @@ public class AuthService {
         }
 
         String token = jwtService.generateToken(userAccount.getUsername(), userAccount.getRole());
+        auditTrailService.record(
+                "LOGIN_SUCCESS",
+                userAccount.getUsername(),
+                "USER",
+                String.valueOf(userAccount.getId()),
+                null);
         return new AuthResponse(token, "Bearer", userAccount.getUsername(), userAccount.getRole().name());
     }
 }
