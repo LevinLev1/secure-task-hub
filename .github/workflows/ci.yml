@@ -104,9 +104,11 @@ jobs:
 
       - name: Install Grype
         uses: anchore/scan-action/download-grype@v7.4.0
+        id: grype
 
+      # download-grype exposes outputs.cmd (absolute path); it does not add `grype` to PATH for run: steps.
       - name: Grype — auth image
-        run: grype secure-task-hub-auth:ci --fail-on high
+        run: ${{ steps.grype.outputs.cmd }} secure-task-hub-auth:ci --fail-on high
 
       - name: Grype — task image
-        run: grype secure-task-hub-task:ci --fail-on high
+        run: ${{ steps.grype.outputs.cmd }} secure-task-hub-task:ci --fail-on high
