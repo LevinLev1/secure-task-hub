@@ -8,6 +8,8 @@
 - `task-service`: protected CRUD for tasks with owner scoping and `ROLE_ADMIN` override.
 - `PostgreSQL`: shared database for a small demo setup.
 - `Flyway`: versioned SQL migrations in `auth-service` (`db/migration`); `task-service` uses `ddl-auto: validate` and does not run Flyway (avoids two writers to `flyway_schema_history` on one database).
+- `OpenAPI / Swagger UI` (springdoc): explore and call APIs in the browser — `auth-service` at `http://localhost:8081/swagger-ui.html`, `task-service` at `http://localhost:8082/swagger-ui.html` (use **Authorize** with a JWT for task endpoints).
+- `Testcontainers`: integration tests with real PostgreSQL (`AuthIntegrationTest`, `TaskIntegrationTest`); `mvn verify` runs them when Docker is available.
 - `Docker` and `docker-compose`: local start of the full stack; `task-service` waits until `auth-service` is healthy so migrations have been applied.
 - `Kubernetes` manifests: deployments, services, config, secrets, probes, resources, network policy.
 - `GitHub Actions`: build, test, filesystem scan, container scan with `Trivy` and `Grype`.
@@ -158,16 +160,12 @@ Use **PowerShell** or **Git Bash** (from [Git for Windows](https://git-scm.com/d
 
 ## CI pipeline
 
-The workflow in `.github/workflows/ci.yml` does the following:
+GitHub Actions (`.github/workflows/ci.yml`) uses **two stages**:
 
-- builds and tests the Maven project
-- runs `Trivy` filesystem scan for vulnerabilities, secrets, and misconfiguration
-- builds both service images
-- scans both images with `Trivy`
-- scans both images with `Grype`
-- fails on `HIGH` and `CRITICAL` findings
+1. **Stage 1 — `verify-and-fs-security`:** `mvn clean verify` (including Testcontainers integration tests), then separate `Trivy` filesystem scans for **secrets**, **vulnerabilities**, and **misconfiguration** (`HIGH`/`CRITICAL` fail the job).
+2. **Stage 2 — `images-k8s-and-grype`:** builds both Docker images, scans them with `Trivy` and `Grype`, and runs **`Trivy config`** on `infra/k8s` for manifest issues.
 
 ## Notes
 
 - This repository currently assumes Java 17 and Maven are available in CI.
-- For a next iteration you can add Testcontainers, OpenAPI, and stronger observability; the baseline stays small on purpose.
+- For a next iteration you can add structured logging, correlation IDs, and release automation (semver tags); the baseline stays small on purpose.

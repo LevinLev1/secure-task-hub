@@ -36,6 +36,12 @@ security:
   jwt:
     secret: ${JWT_SECRET:replace-this-with-a-long-development-secret-key-123456}
 
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
 logging:
   level:
     root: INFO

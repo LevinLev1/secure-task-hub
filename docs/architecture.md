@@ -4,6 +4,18 @@
 
 This project is intentionally small. The objective is not to simulate a full enterprise platform, but to show a realistic DevSecOps-ready delivery flow around a Java microservice application.
 
+## API documentation
+
+Each service exposes **OpenAPI 3** and **Swagger UI** via `springdoc-openapi`. Use Swagger to try endpoints interactively; for `task-service`, obtain a JWT from `auth-service` and use **Authorize** (HTTP bearer) in Swagger UI.
+
+## Automated testing
+
+**Testcontainers** starts a real **PostgreSQL** container during `mvn verify`. `auth-service` integration tests exercise register/login against migrated schema; `task-service` tests apply the same migration SQL from test resources (kept in sync with `auth-service`), generate a signed JWT, and verify task CRUD over HTTP.
+
+## CI stages
+
+GitHub Actions runs **Stage 1** (build, tests, filesystem Trivy: secrets, vulns, misconfig) then **Stage 2** (Docker image build, Trivy image + **Trivy config** on Kubernetes manifests, Grype on images).
+
 ## Services
 
 ### `auth-service`

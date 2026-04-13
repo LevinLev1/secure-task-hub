@@ -40,6 +40,12 @@ security:
     secret: ${JWT_SECRET:replace-this-with-a-long-development-secret-key-123456}
     expiration-seconds: ${JWT_EXPIRATION_SECONDS:3600}
 
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
 logging:
   level:
     root: INFO

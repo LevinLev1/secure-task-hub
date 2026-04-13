@@ -1,0 +1,11 @@
+# PostgreSQL + Flyway for integration tests (migrations under test classpath).
+spring:
+  flyway:
+    enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+security:
+  jwt:
+    secret: test-secret-key-that-is-long-enough-for-hmac-signing-12345
