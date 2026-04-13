@@ -8,6 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
         "spring.datasource.driverClassName=org.h2.Driver",
         "spring.datasource.username=sa",
         "spring.datasource.password=password",
+        "spring.flyway.enabled=false",
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "security.jwt.secret=test-secret-key-that-is-long-enough-for-hmac-signing-12345"
 })

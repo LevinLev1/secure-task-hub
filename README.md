@@ -7,7 +7,8 @@
 - `auth-service`: registration, login, password hashing with `BCrypt`, JWT issuance, role model.
 - `task-service`: protected CRUD for tasks with owner scoping and `ROLE_ADMIN` override.
 - `PostgreSQL`: shared database for a small demo setup.
-- `Docker` and `docker-compose`: local start of the full stack.
+- `Flyway`: versioned SQL migrations in `auth-service` (`db/migration`); `task-service` uses `ddl-auto: validate` and does not run Flyway (avoids two writers to `flyway_schema_history` on one database).
+- `Docker` and `docker-compose`: local start of the full stack; `task-service` waits until `auth-service` is healthy so migrations have been applied.
 - `Kubernetes` manifests: deployments, services, config, secrets, probes, resources, network policy.
 - `GitHub Actions`: build, test, filesystem scan, container scan with `Trivy` and `Grype`.
 
@@ -56,6 +57,17 @@ flowchart LR
 - Kubernetes readiness and liveness probes
 - Kubernetes `ConfigMap`, `Secret`, `NetworkPolicy`, and resource limits
 - CI scanning with `Trivy` and `Grype`
+
+## Database migrations
+
+Schema is created by Flyway migration `services/auth-service/src/main/resources/db/migration/V1__init_schema.sql` (tables `users` and `tasks`). Hibernate **does not** auto-update tables in production-like mode: `ddl-auto` is `validate`.
+
+If you previously ran the stack when Hibernate used `ddl-auto: update`, your Docker volume may already contain tables **without** Flyway history. In that case either:
+
+- reset the volume: `docker compose -f infra/docker-compose.yml down -v` then `up --build`, or  
+- run Flyway repair/baseline manually (advanced).
+
+For local development **without** Docker, start **`auth-service` before `task-service`** so migrations run first.
 
 ## Local run with Docker Compose
 
@@ -110,6 +122,8 @@ kubectl apply -f infra/k8s/base/secure-task-hub.yaml
 
 Before doing that, replace the placeholder container image names in `infra/k8s/base/secure-task-hub.yaml` with your own published images.
 
+With Flyway only on `auth-service`, ensure **`auth-service` pods are ready** (migrations applied) before `task-service` traffic hits the API, or restart `task-service` once auth is up. For a small demo, applying manifests once and waiting for rollouts is usually enough.
+
 ## First push to GitHub from Windows
 
 Use **PowerShell** or **Git Bash** (from [Git for Windows](https://git-scm.com/download/win)), not necessarily classic `cmd.exe`.
@@ -156,4 +170,4 @@ The workflow in `.github/workflows/ci.yml` does the following:
 ## Notes
 
 - This repository currently assumes Java 17 and Maven are available in CI.
-- For a next iteration you can add Flyway, Testcontainers, OpenAPI, and stronger observability; the baseline stays small on purpose.
+- For a next iteration you can add Testcontainers, OpenAPI, and stronger observability; the baseline stays small on purpose.

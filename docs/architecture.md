@@ -40,6 +40,14 @@ Public endpoints:
 - `PUT /api/tasks/{id}`
 - `DELETE /api/tasks/{id}`
 
+## Database migrations
+
+Both services use the **same PostgreSQL database** in the demo setup. **Flyway runs only in `auth-service`**, which owns `src/main/resources/db/migration`. That way a single `flyway_schema_history` table and one ordered migration stream apply to the shared database.
+
+`task-service` sets `spring.flyway.enabled=false` and `spring.jpa.hibernate.ddl-auto=validate`, so it expects the schema that Flyway already created and fails fast if entities and tables diverge.
+
+In Docker Compose, `task-service` waits for `auth-service` to pass its readiness probe so migrations have completed before the task app validates JPA mappings.
+
 ## Data model
 
 ### `users`

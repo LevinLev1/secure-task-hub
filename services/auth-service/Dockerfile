@@ -11,7 +11,10 @@ RUN mvn -pl services/auth-service -am clean package -DskipTests
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 
-RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin springuser
+RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin springuser \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends curl \
+  && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /workspace/services/auth-service/target/auth-service-0.0.1-SNAPSHOT.jar app.jar
 
