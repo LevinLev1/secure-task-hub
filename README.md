@@ -42,6 +42,8 @@ flowchart LR
 - `services/task-service`
 - `infra/docker-compose.yml`
 - `infra/k8s/base/secure-task-hub.yaml`
+- `infra/k8s/kustomization.yaml` — Kustomize for **kind** (local `:local` image tags); `kubectl apply -k infra/k8s`
+- `Makefile` — `compose-up`, `kind-up`, port-forward helpers
 - `.github/workflows/ci.yml`
 - `docs/architecture.md`
 - `docs/security-decisions.md`
@@ -112,19 +114,57 @@ curl -X POST http://localhost:8082/api/tasks \
   -d "{\"title\":\"Review CI findings\",\"description\":\"Check Trivy and Grype output\",\"status\":\"OPEN\"}"
 ```
 
-## Local Kubernetes
+## Local Kubernetes (`kind`)
 
-Use **`kind` on your PC** (install `kind` + `kubectl`). Load locally built images into the cluster or point manifests at images you pushed to a registry.
+**Goal:** run the same manifests as in `infra/k8s/base` without a registry, using images built on your machine.
 
-Apply manifests:
+### What you install (once)
+
+- **Docker** (e.g. Docker Desktop on Windows), running.
+- **`kind`**: [kind.sigs.k8s.io](https://kind.sigs.k8s.io/docs/user/quick-start/)
+- **`kubectl`**: [kubernetes.io/docs/tasks/tools](https://kubernetes.io/docs/tasks/tools/)
+- **`make`**: optional — install via **WSL**, **Chocolatey** (`make`), **MSYS2**, or run the same commands from `Makefile` by hand in a shell.
+
+### Path A — Makefile (recommended)
+
+From the **repository root**:
+
+```bash
+make kind-up
+```
+
+This creates a cluster named `secure-task-hub` (if missing), builds `secure-task-hub-auth:local` and `secure-task-hub-task:local`, loads them into kind, and applies **`kubectl apply -k infra/k8s`** (Kustomize rewrites placeholder image names to the local tags; `kustomization.yaml` lives next to `base/` so Windows/kubectl accept the paths).
+
+Then:
+
+```bash
+kubectl get pods -n secure-task-hub -w
+```
+
+When pods are **Running** / ready, open **two terminals**:
+
+```bash
+make pf-auth
+```
+
+```bash
+make pf-task
+```
+
+- Swagger: `http://localhost:8081/swagger-ui.html` and `http://localhost:8082/swagger-ui.html`
+- Other useful targets: `make help`, `make kind-teardown`, `make compose-up`
+
+### Path B — raw manifests + your registry
+
+For a cluster that pulls from **GHCR** (or another registry), edit image lines in `infra/k8s/base/secure-task-hub.yaml` and apply:
 
 ```bash
 kubectl apply -f infra/k8s/base/secure-task-hub.yaml
 ```
 
-Before doing that, replace the placeholder container image names in `infra/k8s/base/secure-task-hub.yaml` with your own published images.
+### Ordering note (Flyway)
 
-With Flyway only on `auth-service`, ensure **`auth-service` pods are ready** (migrations applied) before `task-service` traffic hits the API, or restart `task-service` once auth is up. For a small demo, applying manifests once and waiting for rollouts is usually enough.
+Only **`auth-service`** runs Flyway. Wait until **`auth-service`** is ready (migrations applied) before relying on **`task-service`**; if task started too early, restart its deployment once auth is healthy.
 
 ## First push to GitHub from Windows
 

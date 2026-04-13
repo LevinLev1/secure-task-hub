@@ -143,6 +143,11 @@ spec:
           ports:
             - containerPort: 8081
           env:
+            # readOnlyRootFilesystem: home dir in image is not writable; JVM/libs use user.home
+            - name: HOME
+              value: /tmp
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Djava.io.tmpdir=/tmp -Duser.home=/tmp"
             - name: SERVER_PORT
               valueFrom:
                 configMapKeyRef:
@@ -195,7 +200,7 @@ spec:
               memory: "256Mi"
             limits:
               cpu: "300m"
-              memory: "512Mi"
+              memory: "768Mi"
       volumes:
         - name: tmp
           emptyDir: {}
@@ -241,6 +246,10 @@ spec:
           ports:
             - containerPort: 8082
           env:
+            - name: HOME
+              value: /tmp
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Djava.io.tmpdir=/tmp -Duser.home=/tmp"
             - name: SERVER_PORT
               valueFrom:
                 configMapKeyRef:
@@ -293,7 +302,7 @@ spec:
               memory: "256Mi"
             limits:
               cpu: "300m"
-              memory: "512Mi"
+              memory: "768Mi"
       volumes:
         - name: tmp
           emptyDir: {}
@@ -325,6 +334,19 @@ spec:
     - from:
         - podSelector: {}
   egress:
+    # Cluster DNS (required to resolve Service names like "postgres")
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
     - to:
         - podSelector: {}
       ports:
@@ -334,5 +356,3 @@ spec:
           port: 8081
         - protocol: TCP
           port: 8082
-        - protocol: UDP
-          port: 53
