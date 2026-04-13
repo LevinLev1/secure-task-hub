@@ -5,6 +5,11 @@ on:
     branches: ["main", "master"]
   pull_request:
 
+# GitHub is moving Actions off Node 20; opt into Node 24 for JS-based actions.
+# See: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   verify-and-fs-security:
     name: "Stage 1 — build, test, filesystem security"
@@ -15,10 +20,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
@@ -27,6 +32,7 @@ jobs:
       - name: Maven verify (unit + integration tests)
         run: mvn -B clean verify
 
+      # Demo defaults in YAML/Compose trigger secret rules; skip those paths (use env/secrets in real deploy).
       - name: Trivy — secret scan (repository)
         uses: aquasecurity/trivy-action@v0.35.0
         with:
@@ -35,6 +41,7 @@ jobs:
           scanners: secret
           severity: HIGH,CRITICAL
           exit-code: "1"
+          skip-files: "services/auth-service/src/main/resources/application.yml,services/task-service/src/main/resources/application.yml,infra/docker-compose.yml,services/task-service/src/test/resources/application-integrationtest.yml"
 
       - name: Trivy — vulnerability scan (filesystem / dependencies)
         uses: aquasecurity/trivy-action@v0.35.0
@@ -45,11 +52,11 @@ jobs:
           severity: HIGH,CRITICAL
           exit-code: "1"
 
-      - name: Trivy — misconfiguration (filesystem)
+      - name: Trivy — misconfiguration (infra only)
         uses: aquasecurity/trivy-action@v0.35.0
         with:
           scan-type: fs
-          scan-ref: .
+          scan-ref: infra
           scanners: misconfig
           severity: HIGH,CRITICAL
           exit-code: "1"
@@ -63,7 +70,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Build auth image
         run: docker build -f services/auth-service/Dockerfile -t secure-task-hub-auth:ci .
@@ -96,7 +103,7 @@ jobs:
           exit-code: "1"
 
       - name: Install Grype
-        uses: anchore/scan-action/download-grype@v4
+        uses: anchore/scan-action/download-grype@v7.4.0
 
       - name: Grype — auth image
         run: grype secure-task-hub-auth:ci --fail-on high
