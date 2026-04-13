@@ -70,19 +70,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      # semgrep/opentelemetry import pkg_resources (setuptools); slim runners may omit it.
-      - name: Install Semgrep
+      # Pip-installed semgrep on GHA has repeatedly broken on pkg_resources/setuptools; use official image.
+      - name: Semgrep scan (Docker)
         run: |
-          pip install "setuptools>=69"
-          pip install "semgrep~=1.99.0"
-
-      - name: Semgrep scan
-        run: semgrep scan --config p/java --config p/security-audit --error services
+          docker run --rm \
+            -v "${{ github.workspace }}:/src" \
+            --workdir /src \
+            semgrep/semgrep:latest \
+            semgrep scan --config p/java --config p/security-audit --error services
 
   checkov-k8s:
     name: "Stage 1c — Checkov (Kubernetes)"
@@ -101,8 +96,16 @@ jobs:
       - name: Install Checkov
         run: pip install "checkov~=3.2.56"
 
+      # Demo baseline skips (see .checkov.yaml); repeat flags — comma form is not reliable across Checkov minors.
       - name: Checkov scan
-        run: checkov -d infra/k8s --framework kubernetes --compact --config-file .checkov.yaml
+        run: |
+          checkov -d infra/k8s --framework kubernetes --compact \
+            --skip-check CKV_K8S_14 \
+            --skip-check CKV_K8S_15 \
+            --skip-check CKV_K8S_35 \
+            --skip-check CKV_K8S_38 \
+            --skip-check CKV_K8S_40 \
+            --skip-check CKV_K8S_43
 
   images-k8s-and-grype:
     name: "Stage 2 — images, Kubernetes manifests, Grype"
