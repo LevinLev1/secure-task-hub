@@ -75,8 +75,11 @@ jobs:
         with:
           python-version: "3.12"
 
+      # semgrep/opentelemetry import pkg_resources (setuptools); slim runners may omit it.
       - name: Install Semgrep
-        run: pip install "semgrep~=1.99.0"
+        run: |
+          pip install "setuptools>=69"
+          pip install "semgrep~=1.99.0"
 
       - name: Semgrep scan
         run: semgrep scan --config p/java --config p/security-audit --error services
@@ -98,9 +101,8 @@ jobs:
       - name: Install Checkov
         run: pip install "checkov~=3.2.56"
 
-      # Severity filters often need Prisma/BC API; keep default local evaluation (second opinion vs Trivy config).
       - name: Checkov scan
-        run: checkov -d infra/k8s --framework kubernetes --compact
+        run: checkov -d infra/k8s --framework kubernetes --compact --config-file .checkov.yaml
 
   images-k8s-and-grype:
     name: "Stage 2 — images, Kubernetes manifests, Grype"
