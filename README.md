@@ -53,6 +53,7 @@ Workflow: `.github/workflows/ci.yml`
 | Stage 1c | Checkov (`infra/k8s`) | Kubernetes policy checks | Non-skipped failing checks |
 | Stage 2 | Trivy image + Grype | Image-level CVE coverage with two scanners | High/Critical vulnerability threshold |
 | Stage 2 | Trivy config (`infra/k8s`) | Misconfig scan on manifests as deployed | `HIGH`/`CRITICAL` findings |
+| Stage 3 (manual) | OWASP ZAP baseline (`.github/workflows/dast.yml`) | DAST smoke security scan against running services | Report artifact for review (currently non-blocking) |
 
 ## Local pre-commit checks
 
