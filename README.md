@@ -36,6 +36,7 @@ Detailed architecture and request flow: `docs/architecture.md`.
 - Password hashing with `BCrypt`
 - Secrets provided via environment variables / Kubernetes `Secret`
 - Container hardening: non-root, reduced capabilities, read-only root filesystem
+- Additional browser-facing hardening headers (`Permissions-Policy`, `COOP`, `COEP`, `CORP`)
 - Kubernetes health probes, resource limits, and `NetworkPolicy`
 - CI security checks with Trivy, Grype, Semgrep, and Checkov
 
@@ -80,6 +81,7 @@ docker compose -f infra/docker-compose.yml up --build
 
 - Auth Swagger: `http://localhost:8081/swagger-ui.html`
 - Task Swagger: `http://localhost:8082/swagger-ui.html`
+- Note: Swagger is intentionally open in this pet project for demo convenience. In production, disable or restrict it.
 
 ### Option B: Kubernetes (`kind`)
 
@@ -97,6 +99,7 @@ make pf-task
 
 - Auth Swagger: `http://localhost:8081/swagger-ui.html`
 - Task Swagger: `http://localhost:8082/swagger-ui.html`
+- Note: Swagger is intentionally open in this pet project for demo convenience. In production, disable or restrict it.
 
 ## Quick API check
 

@@ -30,6 +30,12 @@ This document explains why each security control exists in this project and what
 - **Implemented in**: Spring Actuator endpoint allowlist
 - **Trade-off**: no auth-protected operational dashboard
 
+### Swagger/OpenAPI exposure in pet mode
+
+- **Why**: keep API exploration simple for reviewers and interview demos
+- **Implemented in**: `springdoc` endpoints are enabled and publicly reachable in local/dev profile
+- **Trade-off**: in production, Swagger endpoints should be disabled or restricted (e.g., internal-only access, auth, or environment-specific toggle)
+
 ## Container and Kubernetes controls
 
 ### Non-root containers and runtime hardening
