@@ -6,9 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
-### Planned
-- Demo branch with intentionally insecure configurations for scanner walkthroughs
-- OAuth2/OIDC feature branch
+### Target version
+- `0.1.1`
+
+### Added
+- Security-negative integration tests for auth/task flows (invalid credentials, invalid/missing token, forbidden access, invalid payload)
+- Local pre-commit hook configuration with `gitleaks` and baseline file hygiene checks
+- Manual/feature DAST workflow with OWASP ZAP baseline and report artifacts
+
+### Changed
+- CI naming and documentation now explicitly separates Secret Detection, Source SCA, SAST, IaC policy checks, and Binary SCA
+- Browser-facing security headers strengthened (Permissions-Policy, COOP, COEP, CORP) and CSP policy updated with `form-action`
+- Documentation updated with accepted demo risk for Swagger/CSP warnings and production hardening notes
 
 ## [0.1.0] - 2026-04-14
 

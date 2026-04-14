@@ -4,7 +4,7 @@ I built this project as a practical DevSecOps portfolio case for a Java/Spring B
 The goal is to show that I can design a small microservice system, secure it, test it, containerize it, and enforce quality gates in CI.
 
 - Repository: [LevinLev1/secure-task-hub](https://github.com/LevinLev1/secure-task-hub/tree/main)
-- Current development version: `0.1.0`
+- Current development version: `0.1.1`
 - Runtime paths: Docker Compose and local Kubernetes (`kind`)
 
 ## What is implemented
@@ -41,6 +41,13 @@ Detailed architecture and request flow: `docs/architecture.md`.
 - CI security checks with Trivy, Grype, Semgrep, and Checkov
 
 Detailed rationale: `docs/security-decisions.md`.
+
+## Additional documentation
+
+- Architecture details: `docs/architecture.md`
+- Security rationale and accepted demo risks: `docs/security-decisions.md`
+- Versioning and branch strategy: `docs/versioning.md`
+- Release history: `CHANGELOG.md`
 
 ## CI quality gates
 
@@ -133,7 +140,7 @@ curl -X POST http://localhost:8082/api/tasks \
 ## Versioning and branches
 
 - Versioning model: SemVer (`MAJOR.MINOR.PATCH`)
-- Current line: `0.1.0`
+- Current line: `0.1.1`
 - Release tag format: `vX.Y.Z` (example: `v0.1.0`)
 - Branch roles:
   - `main`: stable, green CI, portfolio-ready
@@ -145,6 +152,4 @@ Details: `docs/versioning.md`, `CHANGELOG.md`, `.github/workflows/release.yml`.
 ## Planned next steps
 
 - Add a dedicated demo branch with intentionally insecure examples for scanner walkthroughs
-- Build OAuth2/OIDC version in a separate feature branch
-- Publish release notes for each SemVer tag
-- Add production profile defaults for Swagger restriction and stricter CSP policy
+- Build an OAuth2/OIDC version in a separate feature branch

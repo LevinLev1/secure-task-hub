@@ -81,8 +81,8 @@ This document explains why each security control exists in this project and what
 
 ### Trivy + Grype image scans
 
-- **Why**: two vulnerability scanners improve confidence and interview talking points
-- **Gate**: fail on severe image findings
+- **Why**: provide binary-level CVE coverage for built Docker image artifacts and reduce blind spots of a single scanner
+- **Gate**: fail when image scan detects configured high-severity findings
 
 ## Accepted risk for demo release
 
