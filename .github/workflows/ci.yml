@@ -12,7 +12,7 @@ env:
 
 jobs:
   verify-and-fs-security:
-    name: "Stage 1 — build, test, filesystem security"
+    name: "Stage 1 — build, test, source security"
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -43,7 +43,7 @@ jobs:
           exit-code: "1"
           skip-files: "services/auth-service/src/main/resources/application.yml,services/task-service/src/main/resources/application.yml,infra/docker-compose.yml,services/task-service/src/test/resources/application-integrationtest.yml"
 
-      - name: Trivy — vulnerability scan (filesystem / dependencies)
+      - name: Trivy — Source SCA (filesystem dependencies)
         uses: aquasecurity/trivy-action@v0.35.0
         with:
           scan-type: fs
@@ -108,7 +108,7 @@ jobs:
             --skip-check CKV_K8S_43
 
   images-k8s-and-grype:
-    name: "Stage 2 — images, Kubernetes manifests, Grype"
+    name: "Stage 2 — binary security, images, Kubernetes"
     runs-on: ubuntu-latest
     needs:
       - verify-and-fs-security
@@ -127,7 +127,7 @@ jobs:
       - name: Build task image
         run: docker build -f services/task-service/Dockerfile -t secure-task-hub-task:ci .
 
-      - name: Trivy — auth image
+      - name: Trivy — Binary SCA (auth image)
         uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: secure-task-hub-auth:ci
@@ -135,7 +135,7 @@ jobs:
           severity: HIGH,CRITICAL
           exit-code: "1"
 
-      - name: Trivy — task image
+      - name: Trivy — Binary SCA (task image)
         uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: secure-task-hub-task:ci
@@ -156,8 +156,8 @@ jobs:
         id: grype
 
       # download-grype exposes outputs.cmd (absolute path); it does not add `grype` to PATH for run: steps.
-      - name: Grype — auth image
+      - name: Grype — Binary SCA (auth image)
         run: ${{ steps.grype.outputs.cmd }} secure-task-hub-auth:ci --fail-on high
 
-      - name: Grype — task image
+      - name: Grype — Binary SCA (task image)
         run: ${{ steps.grype.outputs.cmd }} secure-task-hub-task:ci --fail-on high

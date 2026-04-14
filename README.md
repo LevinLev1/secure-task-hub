@@ -49,12 +49,14 @@ Workflow: `.github/workflows/ci.yml`
 | Stage | Tool | Why it is used | Fails when |
 | --- | --- | --- | --- |
 | Stage 1 | Maven verify + Testcontainers | Prove functional correctness before scanning | Tests fail |
-| Stage 1 | Trivy fs (`secret`, `vuln`, `misconfig`) | Catch leaked secrets, vulnerable dependencies, and infra issues early | `HIGH`/`CRITICAL` findings |
+| Stage 1 | Trivy fs (`secret`) | Secret detection in source/config files before build | `HIGH`/`CRITICAL` findings |
+| Stage 1 | Trivy fs (`vuln`) — **Source SCA** | Dependency vulnerability scan at source/filesystem level | `HIGH`/`CRITICAL` findings |
+| Stage 1 | Trivy fs (`misconfig`) | IaC/config misconfiguration scan on repository files | `HIGH`/`CRITICAL` findings |
 | Stage 1b | Semgrep (`p/java`, `p/security-audit`) | SAST checks for Java/security anti-patterns | Rule violations |
 | Stage 1c | Checkov (`infra/k8s`) | Kubernetes policy checks | Non-skipped failing checks |
-| Stage 2 | Trivy image + Grype | Image-level CVE coverage with two scanners | High/Critical vulnerability threshold |
+| Stage 2 | Trivy image + Grype — **Binary SCA** | Vulnerability scan of built Docker image artifacts | High/Critical vulnerability threshold |
 | Stage 2 | Trivy config (`infra/k8s`) | Misconfig scan on manifests as deployed | `HIGH`/`CRITICAL` findings |
-| Stage 3 (manual) | OWASP ZAP baseline (`.github/workflows/dast.yml`) | DAST smoke security scan against running services | Report artifact for review (currently non-blocking) |
+| Stage 3 (manual/feature) | OWASP ZAP baseline (`.github/workflows/dast.yml`) | DAST smoke security scan against running services | Fails on scan/runtime errors, uploads report artifacts |
 
 ## Local pre-commit checks
 
