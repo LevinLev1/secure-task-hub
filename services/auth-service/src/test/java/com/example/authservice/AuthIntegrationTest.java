@@ -56,4 +56,41 @@ class AuthIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").exists());
     }
+
+    @Test
+    void loginWithWrongPasswordReturnsUnauthorized() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"wrong-pass","email":"wrong-pass@example.com","password":"StrongPass123"}
+                                """))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"wrong-pass","password":"BadPass123"}
+                                """))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void registerWithShortPasswordReturnsBadRequest() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"short-pass","email":"short-pass@example.com","password":"12345"}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void loginWithBlankUsernameReturnsBadRequest() throws Exception {
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":" ","password":"StrongPass123"}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
 }
