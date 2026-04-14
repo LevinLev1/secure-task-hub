@@ -1,6 +1,6 @@
 # SecureTaskHub
 
-I built this project as a practical DevSecOps portfolio case for a Java/Spring Boot role.  
+I built this project as a practical DevSecOps portfolio case for a Java/Spring Boot role.
 The goal is to show that I can design a small microservice system, secure it, test it, containerize it, and enforce quality gates in CI.
 
 - Repository: [LevinLev1/secure-task-hub](https://github.com/LevinLev1/secure-task-hub/tree/main)
@@ -53,6 +53,21 @@ Workflow: `.github/workflows/ci.yml`
 | Stage 1c | Checkov (`infra/k8s`) | Kubernetes policy checks | Non-skipped failing checks |
 | Stage 2 | Trivy image + Grype | Image-level CVE coverage with two scanners | High/Critical vulnerability threshold |
 | Stage 2 | Trivy config (`infra/k8s`) | Misconfig scan on manifests as deployed | `HIGH`/`CRITICAL` findings |
+
+## Local pre-commit checks
+
+To catch common issues before push, this repository includes `.pre-commit-config.yaml` with:
+
+- basic formatting/safety hooks (`trailing-whitespace`, `end-of-file-fixer`, `check-yaml`, merge conflict markers)
+- `gitleaks` secret detection
+
+Setup:
+
+```bash
+pip install pre-commit
+pre-commit install
+pre-commit run --all-files
+```
 
 ## Run locally
 
