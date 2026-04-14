@@ -3,7 +3,7 @@
 ## Version source of truth
 
 - Project version is defined in root `pom.xml` using SemVer: `MAJOR.MINOR.PATCH`
-- Current development line: `0.1.0`
+- Current development line: `0.1.1`
 - Child modules inherit the same version from the parent POM
 
 ## Tag and release format
@@ -16,13 +16,11 @@
 ## Branch model
 
 - `main`
-  - portfolio-ready branch
-  - always expected to keep CI green
-  - no intentionally vulnerable or broken commits
+  - stable branch
+  - CI is expected to stay green
 - `feature/*`
-  - normal development branches (example: `feature/oauth2`)
-  - merge to `main` via pull request
+  - active development branches (example: `feature/v0.1.1-hardening-tests`)
+  - reviewed before merging into `main`
 - `demo/*`
-  - intentionally insecure or scanner-failing examples for demonstrations
-  - isolated from `main`
-  - can be used for screenshots and interview walkthroughs
+  - optional branch for intentionally insecure scanner demonstrations
+  - never merged into `main`

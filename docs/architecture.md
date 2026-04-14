@@ -2,7 +2,7 @@
 
 ## Design objective
 
-This repository is intentionally compact: two services, one database, and a CI pipeline with security gates.  
+This repository is intentionally compact: two services, one database, and a CI pipeline with security gates.
 The design goal is to demonstrate production-adjacent engineering decisions without adding unnecessary platform complexity.
 
 ## System components

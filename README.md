@@ -1,10 +1,10 @@
 # SecureTaskHub
 
-I built this project as a practical DevSecOps portfolio case for a Java/Spring Boot role.  
+I built this project as a practical DevSecOps portfolio case for a Java/Spring Boot role.
 The goal is to show that I can design a small microservice system, secure it, test it, containerize it, and enforce quality gates in CI.
 
 - Repository: [LevinLev1/secure-task-hub](https://github.com/LevinLev1/secure-task-hub/tree/main)
-- Current development version: `0.1.0`
+- Current development version: `0.1.1`
 - Runtime paths: Docker Compose and local Kubernetes (`kind`)
 
 ## What is implemented
@@ -36,10 +36,18 @@ Detailed architecture and request flow: `docs/architecture.md`.
 - Password hashing with `BCrypt`
 - Secrets provided via environment variables / Kubernetes `Secret`
 - Container hardening: non-root, reduced capabilities, read-only root filesystem
+- Additional browser-facing hardening headers (`Permissions-Policy`, `COOP`, `COEP`, `CORP`)
 - Kubernetes health probes, resource limits, and `NetworkPolicy`
 - CI security checks with Trivy, Grype, Semgrep, and Checkov
 
 Detailed rationale: `docs/security-decisions.md`.
+
+## Additional documentation
+
+- Architecture details: `docs/architecture.md`
+- Security rationale and accepted demo risks: `docs/security-decisions.md`
+- Versioning and branch strategy: `docs/versioning.md`
+- Release history: `CHANGELOG.md`
 
 ## CI quality gates
 
@@ -47,12 +55,30 @@ Workflow: `.github/workflows/ci.yml`
 
 | Stage | Tool | Why it is used | Fails when |
 | --- | --- | --- | --- |
-| Stage 1 | Maven verify + Testcontainers | Prove functional correctness before scanning | Tests fail |
-| Stage 1 | Trivy fs (`secret`, `vuln`, `misconfig`) | Catch leaked secrets, vulnerable dependencies, and infra issues early | `HIGH`/`CRITICAL` findings |
-| Stage 1b | Semgrep (`p/java`, `p/security-audit`) | SAST checks for Java/security anti-patterns | Rule violations |
-| Stage 1c | Checkov (`infra/k8s`) | Kubernetes policy checks | Non-skipped failing checks |
-| Stage 2 | Trivy image + Grype | Image-level CVE coverage with two scanners | High/Critical vulnerability threshold |
-| Stage 2 | Trivy config (`infra/k8s`) | Misconfig scan on manifests as deployed | `HIGH`/`CRITICAL` findings |
+| Stage 1 | Maven verify + Testcontainers | Prove functional correctness before security gates | Tests fail |
+| Stage 1 | Trivy fs (`secret`) — **Secret Detection** | Secret detection in source/config files before build | `HIGH`/`CRITICAL` findings |
+| Stage 1 | Trivy fs (`vuln`) — **Source SCA** | Dependency vulnerability scan at source/filesystem level | `HIGH`/`CRITICAL` findings |
+| Stage 1 | Trivy fs (`misconfig`) — IaC checks | IaC/config misconfiguration scan on repository files | `HIGH`/`CRITICAL` findings |
+| Stage 1b | **SAST (Semgrep)** (`p/java`, `p/security-audit`) | Static analysis for Java/security anti-patterns | Rule violations |
+| Stage 1c | **IaC policy (Checkov/K8s)** | Kubernetes policy-as-code checks | Non-skipped failing checks |
+| Stage 2 | Trivy image + Grype — **Binary SCA** | Vulnerability scan of built Docker image artifacts | High/Critical vulnerability threshold |
+| Stage 2 | Trivy config (`infra/k8s`) — IaC checks | Misconfig scan on Kubernetes manifests as deployed | `HIGH`/`CRITICAL` findings |
+| Stage 3 (manual/feature) | OWASP ZAP baseline (`.github/workflows/dast.yml`) | DAST smoke security scan against running services | Fails on scan/runtime errors, uploads report artifacts |
+
+## Local pre-commit checks
+
+To catch common issues before push, this repository includes `.pre-commit-config.yaml` with:
+
+- basic formatting/safety hooks (`trailing-whitespace`, `end-of-file-fixer`, `check-yaml`, merge conflict markers)
+- `gitleaks` secret detection
+
+Setup:
+
+```bash
+pip install pre-commit
+pre-commit install
+pre-commit run --all-files
+```
 
 ## Run locally
 
@@ -64,6 +90,7 @@ docker compose -f infra/docker-compose.yml up --build
 
 - Auth Swagger: `http://localhost:8081/swagger-ui.html`
 - Task Swagger: `http://localhost:8082/swagger-ui.html`
+- Note: Swagger is intentionally open in this pet project for demo convenience. In production, disable or restrict it.
 
 ### Option B: Kubernetes (`kind`)
 
@@ -81,6 +108,7 @@ make pf-task
 
 - Auth Swagger: `http://localhost:8081/swagger-ui.html`
 - Task Swagger: `http://localhost:8082/swagger-ui.html`
+- Note: Swagger is intentionally open in this pet project for demo convenience. In production, disable or restrict it.
 
 ## Quick API check
 
@@ -112,7 +140,7 @@ curl -X POST http://localhost:8082/api/tasks \
 ## Versioning and branches
 
 - Versioning model: SemVer (`MAJOR.MINOR.PATCH`)
-- Current line: `0.1.0`
+- Current line: `0.1.1`
 - Release tag format: `vX.Y.Z` (example: `v0.1.0`)
 - Branch roles:
   - `main`: stable, green CI, portfolio-ready
@@ -124,5 +152,4 @@ Details: `docs/versioning.md`, `CHANGELOG.md`, `.github/workflows/release.yml`.
 ## Planned next steps
 
 - Add a dedicated demo branch with intentionally insecure examples for scanner walkthroughs
-- Build OAuth2/OIDC version in a separate feature branch
-- Publish release notes for each SemVer tag
+- Build an OAuth2/OIDC version in a separate feature branch

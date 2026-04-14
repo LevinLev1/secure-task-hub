@@ -30,6 +30,12 @@ This document explains why each security control exists in this project and what
 - **Implemented in**: Spring Actuator endpoint allowlist
 - **Trade-off**: no auth-protected operational dashboard
 
+### Swagger/OpenAPI exposure in pet mode
+
+- **Why**: keep API exploration simple for reviewers and interview demos
+- **Implemented in**: `springdoc` endpoints are enabled and publicly reachable in local/dev profile
+- **Trade-off**: in production, Swagger endpoints should be disabled or restricted (e.g., internal-only access, auth, or environment-specific toggle)
+
 ## Container and Kubernetes controls
 
 ### Non-root containers and runtime hardening
@@ -75,5 +81,13 @@ This document explains why each security control exists in this project and what
 
 ### Trivy + Grype image scans
 
-- **Why**: two vulnerability scanners improve confidence and interview talking points
-- **Gate**: fail on severe image findings
+- **Why**: provide binary-level CVE coverage for built Docker image artifacts and reduce blind spots of a single scanner
+- **Gate**: fail when image scan detects configured high-severity findings
+
+## Accepted risk for demo release
+
+- DAST warnings in this release are concentrated around `swagger-ui` response headers/CSP (`unsafe-inline` and related browser hardening headers).
+- For this pet-project baseline, this is an **accepted risk** to keep interactive API exploration simple during review.
+- Planned production posture:
+  - disable or restrict Swagger/OpenAPI endpoints outside dev/demo environments
+  - tighten CSP policy when Swagger is not publicly exposed

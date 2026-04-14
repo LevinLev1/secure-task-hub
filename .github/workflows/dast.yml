@@ -1,0 +1,94 @@
+name: dast
+
+on:
+  push:
+    branches: ["feature/**"]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  zap-baseline:
+    name: "DAST — OWASP ZAP baseline (manual)"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Start stack (Docker Compose)
+        run: docker compose -f infra/docker-compose.yml up -d --build
+
+      - name: Wait for auth/task readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:8081/actuator/health/readiness >/dev/null && \
+               curl -fsS http://127.0.0.1:8082/actuator/health/readiness >/dev/null; then
+              echo "Both services are ready."
+              exit 0
+            fi
+            echo "Waiting for services... ($i/60)"
+            sleep 5
+          done
+          echo "Services did not become ready in time."
+          docker compose -f infra/docker-compose.yml logs
+          exit 1
+
+      - name: Prepare report directory
+        shell: bash
+        run: |
+          mkdir -p "${{ github.workspace }}/zap-reports"
+          chmod 777 "${{ github.workspace }}/zap-reports"
+
+      - name: ZAP baseline scan — auth-service
+        shell: bash
+        run: |
+          docker run --rm --network host --user root \
+            --workdir /zap/wrk \
+            -v "${{ github.workspace }}/zap-reports:/zap/wrk:rw" \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+            -t http://127.0.0.1:8081/swagger-ui.html \
+            -m 3 \
+            -I \
+            -J auth-zap.json \
+            -w auth-zap.md \
+            -r auth-zap.html
+
+      - name: ZAP baseline scan — task-service
+        shell: bash
+        run: |
+          docker run --rm --network host --user root \
+            --workdir /zap/wrk \
+            -v "${{ github.workspace }}/zap-reports:/zap/wrk:rw" \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+            -t http://127.0.0.1:8082/swagger-ui.html \
+            -m 3 \
+            -I \
+            -J task-zap.json \
+            -w task-zap.md \
+            -r task-zap.html
+
+      - name: Upload DAST reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-baseline-reports
+          path: |
+            zap-reports/auth-zap.json
+            zap-reports/auth-zap.md
+            zap-reports/auth-zap.html
+            zap-reports/task-zap.json
+            zap-reports/task-zap.md
+            zap-reports/task-zap.html
+          if-no-files-found: error
+
+      - name: Stop stack
+        if: always()
+        run: docker compose -f infra/docker-compose.yml down -v
