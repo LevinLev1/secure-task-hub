@@ -145,3 +145,4 @@ Details: `docs/versioning.md`, `CHANGELOG.md`, `.github/workflows/release.yml`.
 - Add a dedicated demo branch with intentionally insecure examples for scanner walkthroughs
 - Build OAuth2/OIDC version in a separate feature branch
 - Publish release notes for each SemVer tag
+- Add production profile defaults for Swagger restriction and stricter CSP policy

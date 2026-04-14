@@ -83,3 +83,11 @@ This document explains why each security control exists in this project and what
 
 - **Why**: two vulnerability scanners improve confidence and interview talking points
 - **Gate**: fail on severe image findings
+
+## Accepted risk for demo release
+
+- DAST warnings in this release are concentrated around `swagger-ui` response headers/CSP (`unsafe-inline` and related browser hardening headers).
+- For this pet-project baseline, this is an **accepted risk** to keep interactive API exploration simple during review.
+- Planned production posture:
+  - disable or restrict Swagger/OpenAPI endpoints outside dev/demo environments
+  - tighten CSP policy when Swagger is not publicly exposed
