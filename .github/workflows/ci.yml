@@ -2,7 +2,7 @@ name: ci
 
 on:
   push:
-    branches: ["main", "master"]
+    branches: ["main", "master", "feature/**"]
   pull_request:
 
 # GitHub is moving Actions off Node 20; opt into Node 24 for JS-based actions.
