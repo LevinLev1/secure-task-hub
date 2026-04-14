@@ -1,98 +1,79 @@
 # Security Decisions
 
-## Scope
+## Purpose
 
-The project is designed to show practical and explainable security controls for a junior DevSecOps portfolio. The controls are intentionally modest and visible.
+This document explains why each security control exists in this project and what trade-offs were accepted for a portfolio-sized implementation.
 
-## Decisions
+## Application security controls
 
-### Authentication with JWT
+### JWT-based authentication
 
-Reason:
-
-- simple to understand
-- easy to test with `curl` or Postman
-- useful for showing stateless service protection in Kubernetes
-
-Trade-off:
-
-- no refresh token flow
-- no identity provider integration
-- not intended as a full enterprise IAM example
+- **Why**: easy to explain, test, and integrate with stateless microservices
+- **Implemented in**: both services via Spring Security filters
+- **Trade-off**: no refresh token flow and no external identity provider yet
 
 ### Password hashing with BCrypt
 
-Reason:
+- **Why**: baseline requirement for secure credential storage
+- **Implemented in**: `auth-service`
+- **Trade-off**: no adaptive account lockout policy yet
 
-- avoids storing plain passwords
-- standard and recognizable control for interviews
+### Role-based access control
 
-### Shared secret via environment variables
+- **Why**: demonstrate authorization beyond simple authentication
+- **Implemented in**: `ROLE_USER` and `ROLE_ADMIN` model
+- **Trade-off**: no fine-grained policy engine
 
-Reason:
+### Reduced actuator exposure
 
-- keeps secrets out of source code
-- maps cleanly to local Docker and Kubernetes `Secret`
+- **Why**: keep health/readiness endpoints while limiting operational surface
+- **Implemented in**: Spring Actuator endpoint allowlist
+- **Trade-off**: no auth-protected operational dashboard
 
-Trade-off:
+## Container and Kubernetes controls
 
-- good for demo setup
-- in a more advanced version, this could be moved to Vault or sealed secrets
+### Non-root containers and runtime hardening
 
-### Limited actuator exposure
+- **Why**: reduce blast radius of runtime exploits
+- **Implemented in**: `runAsNonRoot`, dropped capabilities, read-only root filesystem
+- **Trade-off**: additional config (`/tmp`, JVM options) needed for Java runtime behavior
 
-Reason:
+### Config and secrets separation
 
-- keeps platform health checks available
-- reduces unnecessary operational surface
+- **Why**: avoid hardcoded secrets in source code and manifests
+- **Implemented in**: Kubernetes `ConfigMap` + `Secret`, env-based injection
+- **Trade-off**: demo uses env vars for simplicity; production can move to secret volumes or external secret stores
 
-Enabled endpoints:
+### NetworkPolicy baseline
 
-- `health`
-- `info`
+- **Why**: show platform-level traffic control and namespace isolation basics
+- **Implemented in**: explicit ingress/egress policy in `infra/k8s/base/secure-task-hub.yaml`
+- **Trade-off**: intentionally minimal policy scope for readability
 
-### Non-root containers
+## CI security gates
 
-Reason:
+### Trivy filesystem scan
 
-- demonstrates a basic but important container hardening step
+- **Why**: detect vulnerable dependencies, leaked secrets, and IaC misconfigurations before image build
+- **Gate**: fail on `HIGH` / `CRITICAL`
 
-### NetworkPolicy
+### Semgrep SAST
 
-Reason:
+- **Why**: identify Java/security anti-patterns in source code
+- **Gate**: fail on rule violations from `p/java` and `p/security-audit`
 
-- gives a concrete example of restricting pod communication
-- shows familiarity with platform-level security, even in a small project
+### Checkov Kubernetes scan
 
-### Scanning strategy
+- **Why**: enforce policy checks for manifests in `infra/k8s`
+- **Gate**: fail on non-skipped policy violations
+- **Baseline skips used intentionally in this repository**:
+  - `CKV_K8S_14` and `CKV_K8S_43`: base manifest uses placeholder tags for local/dev flows; digest pinning is planned for registry-backed release manifests
+  - `CKV_K8S_15`: `IfNotPresent` is acceptable for local iteration speed
+  - `CKV_K8S_35`: secrets via env keep the demo setup simple; production variant should prefer mounted secret files
+  - `CKV_K8S_38`: default service account token behavior is kept for demo simplicity; can be hardened with `automountServiceAccountToken: false`
+  - `CKV_K8S_40`: postgres image UID constraints in official image conflict with strict "high UID" policy in this baseline
 
-The CI pipeline uses:
+### Trivy + Grype image scans
 
-- `Trivy` filesystem scan for vulnerabilities, secrets, and misconfiguration
-- `Trivy` image scan for container images
-- `Grype` image scan as a second scanner
-
-Reason:
-
-- this matches the vacancy direction you described
-- it gives you something concrete to discuss in interviews: different scanners, fail thresholds, image hygiene, and CI gatekeeping
-
-## Threats this project tries to reduce
-
-- plain-text password storage
-- unauthenticated access to task APIs
-- privilege escalation between regular users and admins
-- accidental secret leakage into repository history
-- shipping images with known severe vulnerabilities
-- deploying containers without basic hardening
-
-## Threats intentionally left out for simplicity
-
-- SSO and external identity providers
-- service-to-service mutual TLS
-- advanced rate limiting
-- WAF integration
-- supply-chain signing and provenance
-- admission controllers and policy engines
-
-These are good future extensions, but not required for a first convincing pet project.
+- **Why**: two vulnerability scanners improve confidence and interview talking points
+- **Gate**: fail on severe image findings

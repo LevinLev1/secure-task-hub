@@ -1,20 +1,28 @@
-# Versioning
+# Versioning and Branch Strategy
 
-## Maven (SemVer)
+## Version source of truth
 
-- The reactor version lives in the root `pom.xml` (`<version>`), currently aligned with **SemVer** `MAJOR.MINOR.PATCH` (e.g. `0.1.0`).
-- Child modules inherit that version; bump it when behaviour or API contract changes in a way consumers should notice.
+- Project version is defined in root `pom.xml` using SemVer: `MAJOR.MINOR.PATCH`
+- Current development line: `0.1.0`
+- Child modules inherit the same version from the parent POM
 
-## Git tags
+## Tag and release format
 
-- Release markers use tags **`v` + version**, e.g. **`v0.1.0`** for Maven `0.1.0`.
-- Pushing such a tag runs **`.github/workflows/release.yml`**, which builds Docker images tagged with the numeric version (and `release`) for reproducible demos. Pushing to a registry (GHCR, etc.) is optional and requires your own `docker login` / secrets — the workflow only proves the build on the tag.
+- Git tag format: `vX.Y.Z` (example: `v0.1.0`)
+- Tag value must match Maven project version without the `v` prefix
+- Pushing a SemVer tag triggers `.github/workflows/release.yml`
+- Release workflow verifies build/tests and creates version-tagged Docker images
 
-## Branches
+## Branch model
 
-- **`main`**: keep CI green; this is the branch you show in a portfolio by default.
-- **Demo / “broken on purpose”** work (old dependencies, intentional misconfigs for scanner screenshots) should live in a **separate branch** (e.g. `demo/scanner-baseline`) and **must not** be merged to `main`. Open a PR only as an artifact, or keep the branch for local runs.
-
-## OAuth2 / larger features
-
-- Treat **OAuth2/OIDC** (or similar) as a **feature branch off `main`**, not mixed with demo “bad” branches, so CI failures stay attributable to one change at a time.
+- `main`
+  - portfolio-ready branch
+  - always expected to keep CI green
+  - no intentionally vulnerable or broken commits
+- `feature/*`
+  - normal development branches (example: `feature/oauth2`)
+  - merge to `main` via pull request
+- `demo/*`
+  - intentionally insecure or scanner-failing examples for demonstrations
+  - isolated from `main`
+  - can be used for screenshots and interview walkthroughs

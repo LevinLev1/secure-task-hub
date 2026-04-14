@@ -1,84 +1,40 @@
 # Architecture Overview
 
-## Goal
+## Design objective
 
-This project is intentionally small. The objective is not to simulate a full enterprise platform, but to show a realistic DevSecOps-ready delivery flow around a Java microservice application.
+This repository is intentionally compact: two services, one database, and a CI pipeline with security gates.  
+The design goal is to demonstrate production-adjacent engineering decisions without adding unnecessary platform complexity.
 
-## API documentation
-
-Each service exposes **OpenAPI 3** and **Swagger UI** via `springdoc-openapi`. Use Swagger to try endpoints interactively; for `task-service`, obtain a JWT from `auth-service` and use **Authorize** (HTTP bearer) in Swagger UI.
-
-## Automated testing
-
-**Testcontainers** starts a real **PostgreSQL** container during `mvn verify`. `auth-service` integration tests exercise register/login against migrated schema; `task-service` tests apply the same migration SQL from test resources (kept in sync with `auth-service`), generate a signed JWT, and verify task CRUD over HTTP.
-
-## CI stages
-
-GitHub Actions runs **Stage 1** (build, tests, filesystem Trivy: secrets, vulns, misconfig) then **Stage 2** (Docker image build, Trivy image + **Trivy config** on Kubernetes manifests, Grype on images).
-
-## Services
+## System components
 
 ### `auth-service`
 
-Responsibilities:
-
-- register new users
-- validate credentials
-- hash passwords with `BCrypt`
-- issue signed JWT tokens
-- expose health endpoints for platform checks
-
-Public endpoints:
-
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `GET /actuator/health`
+- Handles registration and login
+- Stores users with `BCrypt` password hashes
+- Issues JWT access tokens
+- Runs Flyway migrations for shared schema
 
 ### `task-service`
 
-Responsibilities:
+- Exposes protected CRUD API for tasks
+- Validates JWT tokens
+- Enforces owner scoping with admin override
+- Uses `ddl-auto: validate` against schema created by Flyway
 
-- create, read, update, and delete tasks
-- trust JWT issued by `auth-service`
-- allow users to access only their own tasks
-- allow admins to access all tasks
-- expose health endpoints for platform checks
+### PostgreSQL
 
-Public endpoints:
+- Single database for demo scope
+- Contains `users`, `tasks`, and `audit_log` tables
 
-- `GET /api/tasks`
-- `GET /api/tasks/{id}`
-- `POST /api/tasks`
-- `PUT /api/tasks/{id}`
-- `DELETE /api/tasks/{id}`
+## Runtime model
 
-## Database migrations
-
-Both services use the **same PostgreSQL database** in the demo setup. **Flyway runs only in `auth-service`**, which owns `src/main/resources/db/migration`. That way a single `flyway_schema_history` table and one ordered migration stream apply to the shared database.
-
-`task-service` sets `spring.flyway.enabled=false` and `spring.jpa.hibernate.ddl-auto=validate`, so it expects the schema that Flyway already created and fails fast if entities and tables diverge.
-
-In Docker Compose, `task-service` waits for `auth-service` to pass its readiness probe so migrations have completed before the task app validates JPA mappings.
-
-## Data model
-
-### `users`
-
-- `id`
-- `username`
-- `email`
-- `password_hash`
-- `role`
-
-### `tasks`
-
-- `id`
-- `title`
-- `description`
-- `status`
-- `owner_username`
-- `created_at`
-- `updated_at`
+```mermaid
+flowchart LR
+    user[Client] --> auth[auth-service]
+    user --> task[task-service]
+    auth --> pg[(PostgreSQL)]
+    task --> pg
+```
 
 ## Request flow
 
@@ -90,36 +46,32 @@ sequenceDiagram
     participant Postgres
 
     Client->>AuthService: POST /api/auth/login
-    AuthService->>Postgres: Validate user credentials
-    AuthService-->>Client: JWT
-    Client->>TaskService: POST /api/tasks with Bearer token
-    TaskService->>TaskService: Validate JWT and role
-    TaskService->>Postgres: Store task
-    TaskService-->>Client: Task response
+    AuthService->>Postgres: Validate credentials
+    AuthService-->>Client: JWT access token
+    Client->>TaskService: POST /api/tasks (Bearer token)
+    TaskService->>TaskService: Validate token and role
+    TaskService->>Postgres: Write task row
+    TaskService-->>Client: Task payload
 ```
 
-## Deployment model
+## Configuration and deployment
 
-### Local development
+- `infra/docker-compose.yml`: local all-in-one runtime
+- `infra/k8s/base/secure-task-hub.yaml`: Kubernetes manifests
+- `infra/k8s/kustomization.yaml`: local `kind` image overrides (`:local` tags)
+- `Makefile`: common commands for compose, kind, image loading, and port-forwarding
 
-- `docker-compose` runs:
-  - PostgreSQL
-  - `auth-service`
-  - `task-service`
+## Migration ownership
 
-### Kubernetes demo deployment
+- Flyway runs only in `auth-service`
+- `task-service` does not run Flyway and validates schema on startup
+- Startup ordering in Compose ensures migrations are complete before task API is used
 
-- one namespace
-- one PostgreSQL deployment for demo purposes
-- one deployment per service
-- environment variables from `ConfigMap` and `Secret`
-- `readiness` and `liveness` probes for both Spring Boot services
-- resource requests and limits
-- `NetworkPolicy` to demonstrate baseline traffic control
+This split keeps one migration owner and avoids race conditions around `flyway_schema_history`.
 
-## Why this architecture works for a junior DevSecOps portfolio
+## Testing and observability
 
-- small enough to finish
-- uses recognizable production-adjacent tools
-- gives room to discuss secure SDLC, container hardening, and CI checks
-- demonstrates both app-level and platform-level controls without requiring a large cluster
+- Integration tests use Testcontainers and PostgreSQL during `mvn verify`
+- Both services expose health probes via Spring Boot Actuator
+- Logs are JSON-formatted and include correlation ID propagation
+- Security-sensitive actions are captured in `audit_log`

@@ -1,97 +1,90 @@
 # SecureTaskHub
 
-`SecureTaskHub` is a small DevSecOps-oriented pet project for a Java/Spring Boot vacancy. It demonstrates how to build, containerize, scan, and prepare a simple microservice application for Kubernetes without turning the project into a large platform.
+I built this project as a practical DevSecOps portfolio case for a Java/Spring Boot role.  
+The goal is to show that I can design a small microservice system, secure it, test it, containerize it, and enforce quality gates in CI.
 
-## What is inside
+- Repository: [LevinLev1/secure-task-hub](https://github.com/LevinLev1/secure-task-hub/tree/main)
+- Current development version: `0.1.0`
+- Runtime paths: Docker Compose and local Kubernetes (`kind`)
 
-- `auth-service`: registration, login, password hashing with `BCrypt`, JWT issuance, role model.
-- `task-service`: protected CRUD for tasks with owner scoping and `ROLE_ADMIN` override.
-- `PostgreSQL`: shared database for a small demo setup.
-- `Flyway`: versioned SQL migrations in `auth-service` (`db/migration`); `task-service` uses `ddl-auto: validate` and does not run Flyway (avoids two writers to `flyway_schema_history` on one database).
-- `OpenAPI / Swagger UI` (springdoc): explore and call APIs in the browser — `auth-service` at `http://localhost:8081/swagger-ui.html`, `task-service` at `http://localhost:8082/swagger-ui.html` (use **Authorize** with a JWT for task endpoints).
-- `Testcontainers`: integration tests with real PostgreSQL (`AuthIntegrationTest`, `TaskIntegrationTest`); `mvn verify` runs them when Docker is available.
-- `Docker` and `docker-compose`: local start of the full stack; `task-service` waits until `auth-service` is healthy so migrations have been applied.
-- `Kubernetes` manifests: deployments, services, config, secrets, probes, resources, network policy.
-- `GitHub Actions`: build, test, filesystem scan, container scan with `Trivy` and `Grype`, plus `Semgrep` (Java) and `Checkov` (Kubernetes manifests).
-- **Observability**: JSON logs (`logstash-logback-encoder`), **`X-Correlation-Id`** + MDC, **`audit_log`** table (Flyway `V2`) for register/login and task mutations.
+## What is implemented
 
-## Versioning (SemVer)
-
-The root `pom.xml` version follows **SemVer** (currently **0.1.0**). Bump **major.minor.patch** when behaviour worth calling out changes. Pushing a tag **`v0.1.0`** (same scheme) runs **`.github/workflows/release.yml`**: `mvn verify` plus Docker images tagged **`0.1.0`** and **`release`**. See **`docs/versioning.md`** for tags, demo branches, and registry notes.
-
-## CI vs local Kubernetes (`kind`)
-
-**GitHub Actions** on the free tier runs build, tests, and security scans without extra paid features. Running a **real `kind` cluster inside CI** is possible but heavier (Docker-in-Docker, longer jobs, more moving parts). For this pet project, **Kubernetes with `kind` is intended to run on your machine** (see below). CI stays focused on **quality gates**; local `kind` is where you practice **deploy** end-to-end.
+| Component | Responsibility | Key points |
+| --- | --- | --- |
+| `auth-service` | Registration and login | BCrypt password hashing, JWT issuance, roles |
+| `task-service` | Protected task CRUD | Owner scoping, `ROLE_ADMIN` override, JWT validation |
+| PostgreSQL | Shared data store | Demo setup for both services |
+| Flyway | Schema migrations | Runs in `auth-service`; `task-service` uses `ddl-auto: validate` |
+| Observability | Operational visibility | JSON logs, `X-Correlation-Id` + MDC, audit log records |
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    user[User_or_Tester] --> authService[auth-service]
-    user --> taskService[task-service]
-    authService --> postgres[(PostgreSQL)]
-    taskService --> postgres
-    ciPipeline[GitHub_Actions] --> trivyFs[Trivy_fs_secret_misconfig_scan]
-    ciPipeline --> buildImages[Build_service_images]
-    ciPipeline --> trivyImages[Trivy_image_scan]
-    ciPipeline --> grypeImages[Grype_image_scan]
+    user[User] --> auth[auth-service]
+    user --> task[task-service]
+    auth --> db[(PostgreSQL)]
+    task --> db
 ```
 
-## Repository layout
+Detailed architecture and request flow: `docs/architecture.md`.
 
-- `services/auth-service`
-- `services/task-service`
-- `infra/docker-compose.yml`
-- `infra/k8s/base/secure-task-hub.yaml`
-- `infra/k8s/kustomization.yaml` — Kustomize for **kind** (local `:local` image tags); `kubectl apply -k infra/k8s`
-- `Makefile` — `compose-up`, `kind-up`, port-forward helpers
-- `.github/workflows/ci.yml`
-- `docs/architecture.md`
-- `docs/security-decisions.md`
-- `docs/versioning.md`
+## Security controls
 
-## Security controls showcased
+- Spring Security and stateless JWT auth in both services
+- Role model: `ROLE_USER` and `ROLE_ADMIN`
+- Password hashing with `BCrypt`
+- Secrets provided via environment variables / Kubernetes `Secret`
+- Container hardening: non-root, reduced capabilities, read-only root filesystem
+- Kubernetes health probes, resource limits, and `NetworkPolicy`
+- CI security checks with Trivy, Grype, Semgrep, and Checkov
 
-- `Spring Security` in both services
-- stateless auth with `JWT`
-- `ROLE_USER` and `ROLE_ADMIN`
-- password hashing with `BCrypt`
-- environment-based secrets
-- reduced actuator exposure
-- container images running as non-root
-- multi-stage Docker builds
-- Kubernetes readiness and liveness probes
-- Kubernetes `ConfigMap`, `Secret`, `NetworkPolicy`, and resource limits
-- CI scanning with `Trivy` and `Grype`
+Detailed rationale: `docs/security-decisions.md`.
 
-## Database migrations
+## CI quality gates
 
-Schema is created by Flyway migration `services/auth-service/src/main/resources/db/migration/V1__init_schema.sql` (tables `users` and `tasks`). Hibernate **does not** auto-update tables in production-like mode: `ddl-auto` is `validate`.
+Workflow: `.github/workflows/ci.yml`
 
-If you previously ran the stack when Hibernate used `ddl-auto: update`, your Docker volume may already contain tables **without** Flyway history. In that case either:
+| Stage | Tool | Why it is used | Fails when |
+| --- | --- | --- | --- |
+| Stage 1 | Maven verify + Testcontainers | Prove functional correctness before scanning | Tests fail |
+| Stage 1 | Trivy fs (`secret`, `vuln`, `misconfig`) | Catch leaked secrets, vulnerable dependencies, and infra issues early | `HIGH`/`CRITICAL` findings |
+| Stage 1b | Semgrep (`p/java`, `p/security-audit`) | SAST checks for Java/security anti-patterns | Rule violations |
+| Stage 1c | Checkov (`infra/k8s`) | Kubernetes policy checks | Non-skipped failing checks |
+| Stage 2 | Trivy image + Grype | Image-level CVE coverage with two scanners | High/Critical vulnerability threshold |
+| Stage 2 | Trivy config (`infra/k8s`) | Misconfig scan on manifests as deployed | `HIGH`/`CRITICAL` findings |
 
-- reset the volume: `docker compose -f infra/docker-compose.yml down -v` then `up --build`, or  
-- run Flyway repair/baseline manually (advanced).
+## Run locally
 
-For local development **without** Docker, start **`auth-service` before `task-service`** so migrations run first.
-
-## Local run with Docker Compose
-
-From the repository root:
+### Option A: Docker Compose
 
 ```bash
 docker compose -f infra/docker-compose.yml up --build
 ```
 
-Services:
+- Auth Swagger: `http://localhost:8081/swagger-ui.html`
+- Task Swagger: `http://localhost:8082/swagger-ui.html`
 
-- `auth-service`: `http://localhost:8081`
-- `task-service`: `http://localhost:8082`
-- `postgres`: `localhost:5432`
+### Option B: Kubernetes (`kind`)
 
-## Example API flow
+```bash
+make kind-up
+kubectl get pods -n secure-task-hub -w
+```
 
-1. Register a user:
+In separate terminals:
+
+```bash
+make pf-auth
+make pf-task
+```
+
+- Auth Swagger: `http://localhost:8081/swagger-ui.html`
+- Task Swagger: `http://localhost:8082/swagger-ui.html`
+
+## Quick API check
+
+1. Register user:
 
 ```bash
 curl -X POST http://localhost:8081/api/auth/register \
@@ -99,7 +92,7 @@ curl -X POST http://localhost:8081/api/auth/register \
   -d "{\"username\":\"alice\",\"email\":\"alice@example.com\",\"password\":\"StrongPass123\"}"
 ```
 
-2. Login and copy the `accessToken`:
+2. Login and copy `accessToken`:
 
 ```bash
 curl -X POST http://localhost:8081/api/auth/login \
@@ -107,107 +100,29 @@ curl -X POST http://localhost:8081/api/auth/login \
   -d "{\"username\":\"alice\",\"password\":\"StrongPass123\"}"
 ```
 
-3. Create a task:
+3. Create task:
 
 ```bash
 curl -X POST http://localhost:8082/api/tasks \
   -H "Authorization: Bearer <TOKEN>" \
   -H "Content-Type: application/json" \
-  -d "{\"title\":\"Review CI findings\",\"description\":\"Check Trivy and Grype output\",\"status\":\"OPEN\"}"
+  -d "{\"title\":\"Review CI findings\",\"description\":\"Check scan gates\",\"status\":\"OPEN\"}"
 ```
 
-## Local Kubernetes (`kind`)
+## Versioning and branches
 
-**Goal:** run the same manifests as in `infra/k8s/base` without a registry, using images built on your machine.
+- Versioning model: SemVer (`MAJOR.MINOR.PATCH`)
+- Current line: `0.1.0`
+- Release tag format: `vX.Y.Z` (example: `v0.1.0`)
+- Branch roles:
+  - `main`: stable, green CI, portfolio-ready
+  - `feature/*`: normal development
+  - `demo/*`: intentionally vulnerable or failing scanner demonstrations, isolated from `main`
 
-### What you install (once)
+Details: `docs/versioning.md`, `CHANGELOG.md`, `.github/workflows/release.yml`.
 
-- **Docker** (e.g. Docker Desktop on Windows), running.
-- **`kind`**: [kind.sigs.k8s.io](https://kind.sigs.k8s.io/docs/user/quick-start/)
-- **`kubectl`**: [kubernetes.io/docs/tasks/tools](https://kubernetes.io/docs/tasks/tools/)
-- **`make`**: optional — install via **WSL**, **Chocolatey** (`make`), **MSYS2**, or run the same commands from `Makefile` by hand in a shell.
+## Planned next steps
 
-### Path A — Makefile (recommended)
-
-From the **repository root**:
-
-```bash
-make kind-up
-```
-
-This creates a cluster named `secure-task-hub` (if missing), builds `secure-task-hub-auth:local` and `secure-task-hub-task:local`, loads them into kind, and applies **`kubectl apply -k infra/k8s`** (Kustomize rewrites placeholder image names to the local tags; `kustomization.yaml` lives next to `base/` so Windows/kubectl accept the paths).
-
-Then:
-
-```bash
-kubectl get pods -n secure-task-hub -w
-```
-
-When pods are **Running** / ready, open **two terminals**:
-
-```bash
-make pf-auth
-```
-
-```bash
-make pf-task
-```
-
-- Swagger: `http://localhost:8081/swagger-ui.html` and `http://localhost:8082/swagger-ui.html`
-- Other useful targets: `make help`, `make kind-teardown`, `make compose-up`
-
-### Path B — raw manifests + your registry
-
-For a cluster that pulls from **GHCR** (or another registry), edit image lines in `infra/k8s/base/secure-task-hub.yaml` and apply:
-
-```bash
-kubectl apply -f infra/k8s/base/secure-task-hub.yaml
-```
-
-### Ordering note (Flyway)
-
-Only **`auth-service`** runs Flyway. Wait until **`auth-service`** is ready (migrations applied) before relying on **`task-service`**; if task started too early, restart its deployment once auth is healthy.
-
-## First push to GitHub from Windows
-
-Use **PowerShell** or **Git Bash** (from [Git for Windows](https://git-scm.com/download/win)), not necessarily classic `cmd.exe`.
-
-1. Install **Git for Windows** if `git --version` fails. During setup, choose **“Git from the command line and also from 3rd-party software”** so `git` is on your `PATH`.
-2. Open **PowerShell**, go to the project:
-
-   ```powershell
-   cd C:\Users\levin\.cursor\projects\secure-task-hub
-   git --version
-   ```
-
-3. If the folder is **not** a repo yet:
-
-   ```powershell
-   git init
-   git add .
-   git commit -m "Initial commit: SecureTaskHub"
-   git branch -M main
-   ```
-
-4. On GitHub, create a **new empty repository** (no README if you want to avoid merge noise). Then:
-
-   ```powershell
-   git remote add origin https://github.com/YOUR_USER/YOUR_REPO.git
-   git push -u origin main
-   ```
-
-   Use your real URL. On first push, GitHub may ask you to log in: **Personal Access Token** as password (HTTPS) or set up **SSH**.
-
-**GitHub CLI (`gh`)** is optional: `gh repo create` can create the repo and add `origin` in fewer steps, but plain `git` is enough. If `git init` “does not work” in CMD, usually **`git` is not in PATH** for that window — install Git for Windows and open a **new** PowerShell, or use **“Git Bash”** from the Start menu.
-
-## CI pipeline
-
-GitHub Actions (`.github/workflows/ci.yml`) uses **two stages**:
-
-1. **Stage 1 — `verify-and-fs-security`:** `mvn clean verify` (including Testcontainers integration tests), then separate `Trivy` filesystem scans for **secrets**, **vulnerabilities**, and **misconfiguration** (`HIGH`/`CRITICAL` fail the job).
-2. **Stage 2 — `images-k8s-and-grype`:** builds both Docker images, scans them with `Trivy` and `Grype`, and runs **`Trivy config`** on `infra/k8s` for manifest issues.
-
-## Notes
-
-- This repository currently assumes Java 17 and Maven are available in CI.
-- For a next iteration you can add structured logging, correlation IDs, and release automation (semver tags); the baseline stays small on purpose.
+- Add a dedicated demo branch with intentionally insecure examples for scanner walkthroughs
+- Build OAuth2/OIDC version in a separate feature branch
+- Publish release notes for each SemVer tag
