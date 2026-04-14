@@ -1,6 +1,9 @@
 name: dast
 
 on:
+  push:
+    branches: ["feature/**"]
+  pull_request:
   workflow_dispatch:
 
 env:
