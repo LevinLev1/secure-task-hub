@@ -156,10 +156,9 @@ jobs:
         id: grype
 
       # download-grype exposes outputs.cmd (absolute path); it does not add `grype` to PATH for run: steps.
-      # TEMP: exclude OpenJDK CVEs while upstream temurin:17-jre-jammy is still on 17.0.18.
-      # Remove excludes after base image updates to a patched JDK 17 build.
+      # Ignore list is stored in .grype.yaml (temporary upstream OpenJDK CVE exceptions).
       - name: Grype — Binary SCA (auth image)
-        run: ${{ steps.grype.outputs.cmd }} secure-task-hub-auth:ci --fail-on high --exclude CVE-2026-22016 --exclude CVE-2026-34282
+        run: ${{ steps.grype.outputs.cmd }} --config .grype.yaml secure-task-hub-auth:ci --fail-on high
 
       - name: Grype — Binary SCA (task image)
-        run: ${{ steps.grype.outputs.cmd }} secure-task-hub-task:ci --fail-on high --exclude CVE-2026-22016 --exclude CVE-2026-34282
+        run: ${{ steps.grype.outputs.cmd }} --config .grype.yaml secure-task-hub-task:ci --fail-on high
