@@ -56,9 +56,9 @@ sequenceDiagram
 
 ## Configuration and deployment
 
-- `infra/docker-compose.yml`: local all-in-one runtime
-- `infra/k8s/base/secure-task-hub.yaml`: Kubernetes manifests
-- `infra/k8s/kustomization.yaml`: local `kind` image overrides (`:local` tags)
+- `infra/docker/docker-compose.yml`: local all-in-one runtime
+- `infra/kubernetes/base/secure-task-hub.yaml`: Kubernetes manifests
+- `infra/kubernetes/kustomization.yaml`: local `kind` image overrides (`:local` tags)
 - `Makefile`: common commands for compose, kind, image loading, and port-forwarding
 
 ## Migration ownership

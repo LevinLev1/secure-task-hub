@@ -18,7 +18,7 @@ services:
 
   auth-service:
     build:
-      context: ..
+      context: ../..
       dockerfile: services/auth-service/Dockerfile
     container_name: auth-service
     environment:
@@ -41,7 +41,7 @@ services:
 
   task-service:
     build:
-      context: ..
+      context: ../..
       dockerfile: services/task-service/Dockerfile
     container_name: task-service
     environment:

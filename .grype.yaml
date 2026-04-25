@@ -1,0 +1,5 @@
+ignore:
+  # TEMP: upstream eclipse-temurin:17-jre-jammy currently resolves to OpenJDK 17.0.18 in CI.
+  # Remove these ignores after base image updates to a patched JDK 17 build.
+  - vulnerability: CVE-2026-22016
+  - vulnerability: CVE-2026-34282

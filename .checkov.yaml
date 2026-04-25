@@ -1,4 +1,4 @@
-# Checkov baseline for this pet project. Trivy still scans infra/k8s with fail on HIGH/CRITICAL.
+# Checkov baseline for this pet project. Trivy still scans infra/kubernetes with fail on HIGH/CRITICAL.
 # Skipped rules are either demo-specific (placeholder :latest, env secrets) or overlap strict “prod-only”
 # expectations; tighten when publishing real images (digest pins, secret volumes, automountServiceAccountToken).
 skip-check:

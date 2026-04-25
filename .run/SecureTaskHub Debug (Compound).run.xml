@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="SecureTaskHub Debug (Compound)" type="CompoundRunConfigurationType" factoryName="Compound">
+    <toRun name="auth-service (Debug Local DB)" type="SpringBootApplicationConfigurationType" />
+    <toRun name="task-service (Debug Local DB)" type="SpringBootApplicationConfigurationType" />
+    <method v="2" />
+  </configuration>
+</component>

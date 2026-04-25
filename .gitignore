@@ -1,5 +1,6 @@
 .idea/
 .vscode/
+agent-transcripts/
 target/
 .mvn/wrapper/maven-wrapper.jar
 *.log

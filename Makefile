@@ -3,12 +3,15 @@
 # Requires: Docker, kind, kubectl.
 
 CLUSTER_NAME ?= secure-task-hub
-COMPOSE := docker compose -f infra/docker-compose.yml
+COMPOSE := docker compose -f infra/docker/docker-compose.yml
 
 .PHONY: help
 help:
 	@echo "Compose:"
 	@echo "  make compose-up      - build and start postgres + auth + task (from repo root)"
+	@echo "  make compose-db-up   - start only postgres for IDE debug workflow"
+	@echo "  make compose-db-logs - tail postgres logs for local debug"
+	@echo "  make compose-db-down - stop only postgres service"
 	@echo "  make compose-down    - stop compose stack"
 	@echo "  make compose-down-v  - stop and remove postgres volume (Flyway clean slate)"
 	@echo ""
@@ -16,15 +19,24 @@ help:
 	@echo "  make kind-cluster    - create cluster if missing ($(CLUSTER_NAME))"
 	@echo "  make docker-build-k8s - build auth/task images tagged :local for kind"
 	@echo "  make kind-load        - load :local images into kind"
-	@echo "  make k8s-apply-kind  - kubectl apply -k infra/k8s (local images)"
+	@echo "  make k8s-apply-kind  - kubectl apply -k infra/kubernetes (local images)"
 	@echo "  make kind-up         - cluster + build + load + apply (full local K8s demo)"
 	@echo "  make kind-teardown   - delete kind cluster"
 	@echo "  make pf-auth         - port-forward auth8081 (run in a separate terminal)"
 	@echo "  make pf-task         - port-forward task 8082"
 
-.PHONY: compose-up compose-down compose-down-v
+.PHONY: compose-up compose-db-up compose-db-logs compose-db-down compose-down compose-down-v
 compose-up:
 	$(COMPOSE) up --build
+
+compose-db-up:
+	$(COMPOSE) up -d postgres
+
+compose-db-logs:
+	$(COMPOSE) logs -f postgres
+
+compose-db-down:
+	$(COMPOSE) stop postgres
 
 compose-down:
 	$(COMPOSE) down
@@ -48,7 +60,7 @@ kind-load: docker-build-k8s
 
 .PHONY: k8s-apply-kind
 k8s-apply-kind:
-	kubectl apply -k infra/k8s
+	kubectl apply -k infra/kubernetes
 
 .PHONY: kind-up
 kind-up: kind-cluster kind-load k8s-apply-kind

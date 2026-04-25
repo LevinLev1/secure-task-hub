@@ -53,7 +53,7 @@ This document explains why each security control exists in this project and what
 ### NetworkPolicy baseline
 
 - **Why**: show platform-level traffic control and namespace isolation basics
-- **Implemented in**: explicit ingress/egress policy in `infra/k8s/base/secure-task-hub.yaml`
+- **Implemented in**: explicit ingress/egress policy in `infra/kubernetes/base/secure-task-hub.yaml`
 - **Trade-off**: intentionally minimal policy scope for readability
 
 ## CI security gates
@@ -70,7 +70,7 @@ This document explains why each security control exists in this project and what
 
 ### Checkov Kubernetes scan
 
-- **Why**: enforce policy checks for manifests in `infra/k8s`
+- **Why**: enforce policy checks for manifests in `infra/kubernetes`
 - **Gate**: fail on non-skipped policy violations
 - **Baseline skips used intentionally in this repository**:
   - `CKV_K8S_14` and `CKV_K8S_43`: base manifest uses placeholder tags for local/dev flows; digest pinning is planned for registry-backed release manifests

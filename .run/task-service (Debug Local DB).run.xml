@@ -1,0 +1,15 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="task-service (Debug Local DB)" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.example.taskservice.TaskServiceApplication" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <module name="task-service" />
+    <envs>
+      <env name="SERVER_PORT" value="8082" />
+      <env name="SPRING_DATASOURCE_URL" value="jdbc:postgresql://localhost:5432/securetaskhub" />
+      <env name="SPRING_DATASOURCE_USERNAME" value="securetaskhub" />
+      <env name="SPRING_DATASOURCE_PASSWORD" value="securetaskhub-dev-password" />
+      <env name="JWT_SECRET" value="replace-this-with-a-long-development-secret-key-123456" />
+    </envs>
+    <method v="2" />
+  </configuration>
+</component>
