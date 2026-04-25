@@ -1,6 +1,6 @@
 # Local kind: rewrites app images to :local (loaded via `kind load docker-image`).
-# Must live under infra/k8s/ so `resources: base/...` stays inside the kustomize root (no `..`).
-# Apply: kubectl apply -k infra/k8s
+# Must live under infra/kubernetes/ so `resources: base/...` stays inside the kustomize root (no `..`).
+# Apply: kubectl apply -k infra/kubernetes
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:

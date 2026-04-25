@@ -25,7 +25,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `auth-service` and `task-service` microservice baseline with JWT auth
 - Docker Compose runtime with PostgreSQL
 - Kubernetes manifests for namespace, deployments, services, probes, and network policy
-- Local kind flow via `infra/k8s/kustomization.yaml` and `Makefile` targets
+- Local kind flow via `infra/kubernetes/kustomization.yaml` and `Makefile` targets
 - CI pipeline with Maven verify, Trivy, Grype, Semgrep, and Checkov
 - JSON logging, correlation ID filter, and audit trail persistence
 - Release workflow for SemVer tags (`vX.Y.Z`)

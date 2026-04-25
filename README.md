@@ -48,6 +48,9 @@ Detailed rationale: `docs/security-decisions.md`.
 - Security rationale and accepted demo risks: `docs/security-decisions.md`
 - Versioning and branch strategy: `docs/versioning.md`
 - Release history: `CHANGELOG.md`
+- Local run checklist (no Docker/K8s): `docs/local-run-without-docker.md`
+- IDE debug mode (DB in Docker, services local): `docs/debug-run-with-idea.md`
+- Shared IDEA run templates: `.run/` (optional convenience configs)
 
 ## CI quality gates
 
@@ -62,7 +65,7 @@ Workflow: `.github/workflows/ci.yml`
 | Stage 1b | **SAST (Semgrep)** (`p/java`, `p/security-audit`) | Static analysis for Java/security anti-patterns | Rule violations |
 | Stage 1c | **IaC policy (Checkov/K8s)** | Kubernetes policy-as-code checks | Non-skipped failing checks |
 | Stage 2 | Trivy image + Grype — **Binary SCA** | Vulnerability scan of built Docker image artifacts | High/Critical vulnerability threshold |
-| Stage 2 | Trivy config (`infra/k8s`) — IaC checks | Misconfig scan on Kubernetes manifests as deployed | `HIGH`/`CRITICAL` findings |
+| Stage 2 | Trivy config (`infra/kubernetes`) — IaC checks | Misconfiguration scan on Kubernetes manifests as deployed | `HIGH`/`CRITICAL` findings |
 | Stage 3 (manual/feature) | OWASP ZAP baseline (`.github/workflows/dast.yml`) | DAST smoke security scan against running services | Fails on scan/runtime errors, uploads report artifacts |
 
 ## Local pre-commit checks
@@ -85,7 +88,7 @@ pre-commit run --all-files
 ### Option A: Docker Compose
 
 ```bash
-docker compose -f infra/docker-compose.yml up --build
+docker compose -f infra/docker/docker-compose.yml up --build
 ```
 
 - Auth Swagger: `http://localhost:8081/swagger-ui.html`
@@ -109,6 +112,51 @@ make pf-task
 - Auth Swagger: `http://localhost:8081/swagger-ui.html`
 - Task Swagger: `http://localhost:8082/swagger-ui.html`
 - Note: Swagger is intentionally open in this pet project for demo convenience. In production, disable or restrict it.
+
+### Option C: IDEA Debug mode (hybrid)
+
+Use this mode when you need breakpoints:
+
+1. Start only PostgreSQL in Docker:
+
+With `make`:
+
+```bash
+make compose-db-up
+```
+
+Without `make`:
+
+```bash
+docker compose -f infra/docker/docker-compose.yml up -d postgres
+```
+
+2. Start services in IDEA Debug:
+
+- **Using shared `.run` templates** (if they are visible in IDEA):
+  - `auth-service (Debug Local DB)`
+  - `task-service (Debug Local DB)`
+  - or one-click `SecureTaskHub Debug (Compound)`
+
+- **Without `.run` templates**:
+  - create Spring Boot Run/Debug for:
+    - `com.example.authservice.AuthServiceApplication`
+    - `com.example.taskservice.TaskServiceApplication`
+  - set environment variables as documented in `docs/debug-run-with-idea.md`.
+
+3. Start order:
+
+- first `auth-service` (runs Flyway migrations),
+- then `task-service` (`ddl-auto=validate` expects existing schema).
+
+Full setup details: `docs/debug-run-with-idea.md`.
+
+## Infrastructure layout
+
+- `infra/docker/docker-compose.yml` - Docker Compose runtime definition.
+- `infra/kubernetes/base/secure-task-hub.yaml` - base Kubernetes manifests.
+- `infra/kubernetes/kustomization.yaml` - local kind image overrides (`:local` tags).
+- `Makefile` - command shortcuts for compose and kind workflows.
 
 ## Quick API check
 
