@@ -4,9 +4,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.example</groupId>
+        <groupId>com.securetaskhub</groupId>
         <artifactId>secure-task-hub</artifactId>
-        <version>0.1.1</version>
+        <version>0.1.2</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -14,6 +14,11 @@
     <name>auth-service</name>
 
     <dependencies>
+        <dependency>
+            <groupId>com.securetaskhub</groupId>
+            <artifactId>shared-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -102,6 +107,22 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>application.yml</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>application.yml</exclude>
+                </excludes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

@@ -10,14 +10,15 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.example</groupId>
+    <groupId>com.securetaskhub</groupId>
     <artifactId>secure-task-hub</artifactId>
-    <version>0.1.1</version>
+    <version>0.1.2</version>
     <packaging>pom</packaging>
     <name>secure-task-hub</name>
     <description>Small DevSecOps-focused Java microservices pet project</description>
 
     <modules>
+        <module>services/shared-common</module>
         <module>services/auth-service</module>
         <module>services/task-service</module>
     </modules>
