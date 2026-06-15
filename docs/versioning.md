@@ -3,7 +3,7 @@
 ## Version source of truth
 
 - Project version is defined in root `pom.xml` using SemVer: `MAJOR.MINOR.PATCH`
-- Current development line: `0.1.1`
+- Current development line: `0.1.2`
 - Child modules inherit the same version from the parent POM
 
 ## Tag and release format

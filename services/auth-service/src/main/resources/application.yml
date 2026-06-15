@@ -7,7 +7,7 @@ spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/securetaskhub}
     username: ${SPRING_DATASOURCE_USERNAME:securetaskhub}
-    password: ${SPRING_DATASOURCE_PASSWORD:changeme}
+    password: ${SPRING_DATASOURCE_PASSWORD:securetaskhub-dev-password}
   flyway:
     enabled: true
   jpa:
@@ -37,7 +37,7 @@ management:
 
 app:
   api-docs:
-    version: 0.1.1
+    version: '@project.version@'
 
 security:
   jwt:

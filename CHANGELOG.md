@@ -6,8 +6,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
-### Target version
-- `0.1.1`
+## [0.1.2] - 2026-06-15
+
+### Added
+- `shared-common` Maven module for cross-service JWT, correlation ID, audit logging, and HTTP security headers
+- Dedicated run guides for Docker Compose and local kind (`docs/run-with-docker-compose.md`, `docs/run-with-kind.md`)
+- Kubernetes `startupProbe` on auth/task deployments for slower JVM cold start on kind
+
+### Changed
+- Java packages aligned to project namespace: `com.securetaskhub.auth` and `com.securetaskhub.task`
+- Clearer domain naming: `User` and `Task` entities (tables unchanged)
+- README: quick start, repository map, and three local run paths (Compose, IDEA, kind)
+- Docker build context includes `shared-common`; API version follows Maven `${project.version}`
+- IDEA run configs and `docs/run-with-idea.md` updated for new main classes
+
+### Removed
+- Duplicated observability and JWT helper code from individual services
+- Redundant H2-only application smoke tests (PostgreSQL integration tests retained)
+
+## [0.1.1] - 2026-04-22
 
 ### Added
 - Security-negative integration tests for auth/task flows (invalid credentials, invalid/missing token, forbidden access, invalid payload)

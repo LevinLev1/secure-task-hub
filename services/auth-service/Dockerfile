@@ -2,6 +2,8 @@ FROM maven:3.9.11-eclipse-temurin-17 AS build
 WORKDIR /workspace
 
 COPY pom.xml pom.xml
+COPY services/shared-common/pom.xml services/shared-common/pom.xml
+COPY services/shared-common/src services/shared-common/src
 COPY services/auth-service/pom.xml services/auth-service/pom.xml
 COPY services/task-service/pom.xml services/task-service/pom.xml
 COPY services/auth-service/src services/auth-service/src

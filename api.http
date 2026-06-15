@@ -13,7 +13,7 @@ Content-Type: application/json
   "password": "StrongPass123"
 }
 
-### Login — скопируй accessToken из ответа
+### Login — copy accessToken from response into @token below
 POST http://localhost:8081/api/auth/login
 Content-Type: application/json
 
@@ -22,17 +22,19 @@ Content-Type: application/json
   "password": "StrongPass123"
 }
 
-### Tasks — подставь токен из login
+@token = <paste-accessToken-here>
+
+### Create task
 POST http://localhost:8082/api/tasks
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhbGljZSIsInJvbGUiOiJST0xFX1VTRVIiLCJpYXQiOjE3NzYwMDczNzIsImV4cCI6MTc3NjAxMDk3Mn0.hYENnN_-Y9w3NtQiz16fYZUrvISVsshdOrgFWXQi4u4
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "title": "Test",
-  "description": "From IDEA",
+  "title": "Test task",
+  "description": "From api.http",
   "status": "OPEN"
 }
 
 ### List tasks
 GET http://localhost:8082/api/tasks
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhbGljZSIsInJvbGUiOiJST0xFX1VTRVIiLCJpYXQiOjE3NzYwMDczNzIsImV4cCI6MTc3NjAxMDk3Mn0.hYENnN_-Y9w3NtQiz16fYZUrvISVsshdOrgFWXQi4u4
+Authorization: Bearer {{token}}
