@@ -13,7 +13,10 @@ RUN mvn -pl services/task-service -am clean package -DskipTests
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 
-RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin springuser
+RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin springuser \
+  && apt-get update \
+  && apt-get upgrade -y \
+  && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /workspace/services/task-service/target/task-service-*.jar app.jar
 
