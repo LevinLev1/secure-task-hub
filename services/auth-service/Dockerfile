@@ -15,6 +15,7 @@ WORKDIR /app
 
 RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin springuser \
   && apt-get update \
+  && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends curl \
   && rm -rf /var/lib/apt/lists/*
 
